@@ -1,3 +1,5 @@
+# NOTE: README is OUTDATED
+
 ## Installation
 
 To setup all the required dependencies for training and evaluation, please follow the instructions below:
