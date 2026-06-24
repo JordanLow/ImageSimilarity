@@ -3,23 +3,31 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 from DataLoader import DataLoader
-from ModelCombo import ModelCombo
 
 from match import *
 from tqdm import tqdm
 
 import argparse
+import importlib.util
+import os
 
+def load_model_from_file(model_path, class_name):
+    spec = importlib.util.spec_from_file_location(class_name, model_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    model_class = getattr(module, class_name)
+    return model_class()
 
-def train(model, optimizer, batch_size, epoch, src_path, trg_path, sv_path, eval, metrics):
+def train(model, optimizer, batch_size, epoch, src_path, trg_path, sv_path, eval, metrics, save_best_weights):
     model.train()
 
     log_avg_loss = []
     log_eval_acc = []
+    best_epoch_loss = float('inf') # Initialize best epoch loss to infinity
 
     for e in tqdm(range(epoch)):
         losses = []
-        print('\nEpoch {}'.format(e+1))
+        print(f'\nEpoch {e+1}')
         for img, label in DataLoader(src_path, trg_path, batch_size, augments=True):
 
             if img.shape[0] != batch_size*2:
@@ -30,24 +38,31 @@ def train(model, optimizer, batch_size, epoch, src_path, trg_path, sv_path, eval
             loss = contrast_loss_func(pred, label, 0.05)
             loss.backward()
             optimizer.step()
-            print('Total loss for this batch: {}'.format(loss.item()))
+            print(f'Total loss for this batch: {loss.item()}')
             losses.append(loss.item())
 
-        save_weights(model, e+1, sv_path)
         avg_loss = sum(losses)/len(losses)
-        print('Average Loss for Epoch: {}'.format(avg_loss))
+
+        if save_best_weights:
+            if avg_loss < best_epoch_loss:
+                best_epoch_loss = avg_loss
+                save_weights(model, "best", sv_path)
+        else:
+            save_weights(model, e+1, sv_path)
+
+        print(f'Average Loss for Epoch: {avg_loss}')
         log_avg_loss.append(avg_loss)
 
         # eval
         if e > -1 and eval:
             eval_acc = match(model, src_path, trg_path, 15, '')
-            print('Accuracy for this epoch: {}'.format(eval_acc))
+            print(f'Accuracy for this epoch: {eval_acc}')
             log_eval_acc.append(eval_acc)
 
     if metrics:
         with open(metrics + 'avgLoss.txt', 'w') as lossfile, open(metrics + 'evalAcc.txt', 'w') as evalfile:
-            lossfile.write('{}\n'.format())
-            evalfile.write('{}\n'.format())
+            lossfile.write(f'{log_avg_loss}\n')
+            evalfile.write(f'{log_eval_acc}\n')
 
 
 def contrast_loss_func(output, target, temp=0.05):
@@ -72,13 +87,18 @@ def save_weights(model, id, save_path):
         if 'model' in key:
             del state_dict[key]
 
-    torch.save(state_dict, '{}/{}.pt'.format(save_path, id))
+    torch.save(state_dict, f'{save_path}/{id}.pt')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str,
                         default='', help='initial weights path')
+    parser.add_argument(
+        '--model-definition', type=str,
+        default='ModelCombo.py', help='path to the model definition file')
+    parser.add_argument('--save-best-weights', action='store_true',
+                        help='Save only the best model weights based on evaluation accuracy.')
     parser.add_argument('--source', type=str,
                         default='./source', help='source image folder path')
     parser.add_argument('--target', type=str,
@@ -104,7 +124,10 @@ if __name__ == '__main__':
     #                    default=False, help='Freeze backbone weights')
     opt = parser.parse_args()
 
-    model = ModelCombo().to(opt.device)
+    model_filename = os.path.basename(opt.model_definition)
+    model_class_name = os.path.splitext(model_filename)[0]
+    model = load_model_from_file(opt.model_definition, model_class_name)
+    model = model.to(opt.device)
 
     if opt.weights:
         model.load_state_dict(torch.load(opt.weights), strict=False)
@@ -123,4 +146,4 @@ if __name__ == '__main__':
     # optimizer = torch.optim.Adam(nonfrozen_params, lr=opt.learning_rate)
 
     train(model, optimize, opt.batch_size, opt.epochs,
-          opt.source, opt.target, opt.save_dir, eval=opt.eval, metrics=opt.metrics)
+          opt.source, opt.target, opt.save_dir, eval=opt.eval, metrics=opt.metrics, save_best_weights=opt.save_best_weights)
