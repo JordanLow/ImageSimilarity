@@ -221,6 +221,7 @@
       <span><b>Paper deadline:</b> July 28 (22 days)</span>
       <span><b>Supplementary:</b> July 31</span>
       <span><b>Venue:</b> AAAI-27, Montréal, Feb 16–23 2027</span>
+      <span><b>Rev. 2:</b> incorporates the official AAAI-26 reviews (§3.3)</span>
     </div>
   </div>
 </header>
@@ -248,6 +249,11 @@
       <div class="a">Freeze Shard 1 as dev, label Shard 3 as untouched test, ablate from cached manifests.</div>
       <div class="d">Declare Shard 1 the development set; report Shards 2–3 with frozen thresholds, bootstrap CIs, and McNemar tests. Most ablation rows are CPU post-processing over manifests you already have — the full grid costs ≈85 A100-hours. §6–7.</div>
     </div>
+  </div>
+
+  <div class="callout">
+    <p class="t">Revision note — the actual AAAI-26 reviews are now in hand</p>
+    <p>This report was first written by reconstructing the rejection from the submission's own weaknesses. The official OpenReview record (Submission #879, decision Nov 4, 2025: Reject; ratings 4 / 3 / 1 / 1) has since been provided and <b>confirms the diagnosis point for point</b> — see the review-by-review crosswalk in §3.3. Three things changed as a result: (a) last year's submission was <b>already an AISI-track submission</b>, which proves AISI applies full methods rigor; (b) <b>RoMa is upgraded from optional to must-run</b> — a reviewer named it explicitly as likely better than ASpanFormer; (c) the verified-pair count is <b>2,636</b> (refined from 2,818 during the rebuttal by removing ~182 same-scene-not-exact pairs — a fact that is itself the best possible motivation for this year's core contribution).</p>
   </div>
 
   <div class="callout act">
@@ -300,7 +306,7 @@
   <div class="tblwrap"><table>
     <thead><tr><th>Criterion</th><th>"Excellent" means…</th><th>Your current standing</th></tr></thead>
     <tbody>
-      <tr><td><b>1. Significance of the problem</b></td><td>Significant social-impact problem not adequately addressed by the AI community</td><td><span class="chip good">Strong</span> — genuinely underserved; unique archives</td></tr>
+      <tr><td><b>1. Significance of the problem</b></td><td>Significant social-impact problem not adequately addressed by the AI community</td><td><span class="chip good">Strong but not unanimous</span> — AAAI-26 scores were 3/3/2/1; the misinformation-infrastructure framing is the lever for the skeptics</td></tr>
       <tr><td><b>2. Engagement with literature</b></td><td>Excellent understanding of literature <em>within and outside</em> CS</td><td><span class="chip minor">At risk</span> — the JOCCH/DHF scholarship never made it into the AAAI-26 text</td></tr>
       <tr><td><b>3. Significance to the AI community</b></td><td>Technical novelty <em>or</em> improved scientific insight into AI in societal settings</td><td><span class="chip good">Strong if claimed narrowly</span> — pose-as-forensic-signal (§3.2)</td></tr>
       <tr><td><b>4. Soundness</b></td><td>Claims well supported; strengths <em>and weaknesses</em> carefully evaluated</td><td><span class="chip fatal">Failing</span> — leakage, biased recall, no variance (§4)</td></tr>
@@ -345,8 +351,47 @@
   </table></div>
   <p>Recommended wording: <em>"the novelty lies in applying inferred-pose discrimination to the copy-detection polarity — identity of capture vs. same scene — on cross-domain archival pairs,"</em> not "first to use these models for pairwise verification." Also cite Computational Re-Photography (TOG 2010, the ancestor of pose-delta-between-photos) and the IND/NIND near-duplicate taxonomy (Chum et al. 2007) to name the task formally.</p>
 
-  <h3>3.3 Why the AAAI-26 submission died — and what has (and hasn't) changed</h3>
-  <p>Reading the rejected paper against its own reproducibility checklist tells the story: one results table with a single in-house baseline; thresholds chosen "empirically" with no sensitivity analysis; checklist self-reports of <em>no</em> code appendix, <em>no</em> variance or statistical tests, <em>no</em> compute specs; a dataset release promise; and leftover template prose. The 2026 pipeline is a real technical improvement — but as of today, <b>every one of those process failures is still present</b>, and three new ones have appeared (§4). The sprint is therefore mostly about process, not models.</p>
+  <h3>3.3 What the AAAI-26 reviews actually said — and the crosswalk to this plan</h3>
+  <p>The official record: <b>Submission #879 to the AISI-26 track</b> (keyword "AISI: Computational Social Science and Humanities"), four reviews, decision <b>Reject</b> (Nov 4, 2025). Meta-review, condensed: <em>"the problem and dataset are interesting but reviewers are not persuaded by the novelty and contribution… a composition of several off-the-shelf models with limited contribution… the evaluation only considered a variation of the method and did not consider many other models on cross-domain matching… the dataset only looks at one publication source and is limited to evaluate generalizability."</em></p>
+
+  <h4>The score profile — where the paper actually lost</h4>
+  <div class="tblwrap"><table>
+    <thead><tr><th>AISI rubric dimension</th><th class="num">R1 (Zi9f)</th><th class="num">R2 (xPWd)</th><th class="num">R3 (yrEJ)</th><th class="num">R4 (4Mej)</th></tr></thead>
+    <tbody>
+      <tr><td>Significance of the problem</td><td class="num">3 Good</td><td class="num">3 Good</td><td class="num">2 Fair</td><td class="num">1 Poor</td></tr>
+      <tr><td>Scope &amp; promise for social impact</td><td class="num">2 Fair</td><td class="num">2 Fair</td><td class="num">1 Poor</td><td class="num">1 Poor</td></tr>
+      <tr><td>Justification of approach</td><td class="num">3 Good</td><td class="num">2 Fair</td><td class="num">1 Poor</td><td class="num">1 Poor</td></tr>
+      <tr><td><b>Quality of evaluation</b></td><td class="num"><b>1 Poor</b></td><td class="num"><b>2 Fair</b></td><td class="num"><b>1 Poor</b></td><td class="num"><b>1 Poor</b></td></tr>
+      <tr><td>Reproducibility &amp; facilitation</td><td class="num">2 Fair</td><td class="num">3 Good</td><td class="num">1 Poor</td><td class="num">2 Fair</td></tr>
+      <tr><td>Overall</td><td class="num">3 Weak Rej.</td><td class="num">4 Weak Acc.</td><td class="num">1 Strong Rej.</td><td class="num">1 Strong Rej.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Two readings matter. First, <b>problem significance was never the issue</b> — the paper lost on <b>quality of evaluation</b> (unanimously Poor/Fair) and <b>scope/promise for practice</b> (no evidence historians save time, no deployment path). Those are exactly the two dimensions this plan spends its effort on, and neither requires new model novelty. Second, <b>AISI does not shield a paper from CV-methods rigor</b>: two of the four reviewers wrote main-track-style methods reviews and rated Strong Reject; R4's post-rebuttal note — "the key weakness for me is the limited evaluation, both in terms of comparison to other methods and across more datasets" — held through the rebuttal.</p>
+
+  <h4>Objection-by-objection crosswalk to this plan</h4>
+  <div class="tblwrap"><table>
+    <thead><tr><th>What the reviewers demanded (paraphrased, with source)</th><th>Where this plan answers it</th></tr></thead>
+    <tbody>
+      <tr><td>Compare against modern retrieval/matching baselines: CLIP / DINOv2, NetVLAD / GeM / DELG, LoFTR / LightGlue / <b>RoMa — "performs better than ASpanFormer across a range of tasks"</b> (R3, R4, meta)</td><td>Table A retrieval baselines; matcher swaps B14/B15 — <b>RoMa upgraded to must-run</b> (§6.2)</td></tr>
+      <tr><td>Systematic per-component ablation; attribute gains to the depth branch vs. the re-ranker; report top-1 without re-ranking (R2, R3)</td><td>Tables A/B one-factor-at-a-time design with attribution rows (§6.2, §7)</td></tr>
+      <tr><td>Single archive → generalizability untested; add cross-dataset evaluation (R1, R2, R3, R4, meta)</td><td>Hokushi → Jinchaji transfer with frozen thresholds (§6.7). The rebuttal already piloted this — 311/340 pairs (91.5%) on the Sha Fei archive — this year it becomes a designed, pre-registered experiment instead of a post-hoc rescue</td></tr>
+      <tr><td>Depth reliability on halftone/degraded prints never established; visualize quality, correlate with retrieval, test sensitivity to errors (R3)</td><td>The same demand will hit VGGT pose on picture-of-a-picture inputs — answered pre-emptively by the pose-validity controls (§6.5)</td></tr>
+      <tr><td>Annotation workflow, inter-annotator agreement (IAA), QC procedures missing; labels binary-only, want fine-grained annotations (crop boxes, halftone dot size) (R1, R3)</td><td>Codebook + dual annotation + kappa; trace-type taxonomy on all positives (§6.6)</td></tr>
+      <tr><td>Ethics not addressed; WWII propaganda needs contextualization; licensing/permissions for release unclarified (R2)</td><td>Ethics/positionality section + rights confirmation + annotation-only release with datasheet (§4-F5)</td></tr>
+      <tr><td>"Is improving 55%→75% P@1 meaningful for downstream users? …still high enough that manual verification is needed; not clear how much time it would save"; "hints at downstream use by historians, but no example" (R4)</td><td>The historian time-saved study + 2–3 new close-reading discoveries (§6.6)</td></tr>
+      <tr><td>Ad-hoc choices with no evaluation: k=15, re-ranking strategy, thresholds (R4)</td><td>Sensitivity curves for every hand-set constant (§6.3)</td></tr>
+      <tr><td>Sensitivity to YOLOv11 cropping errors; report robustness when layout detection fails (R3)</td><td>Crop-stage QC audit, formalizing the rebuttal's ">98%, manually checked" claim (§6.5)</td></tr>
+      <tr><td>Anonymous self-references made comparison to the prior paper impossible (R4)</td><td>Cite JOCCH and the essays in third person with full citations — never "Anonymous (2024)"</td></tr>
+      <tr><td>"Would similar performance be possible without domain-specific fine-tuning?" (R4)</td><td>Off-the-shelf baseline rows (A1–A4) + the transductive-SSL control (§6.8)</td></tr>
+      <tr><td>Sparse metrics — want P@1, R@5/10, mAP, Recall@K curves (R3); Figure 2 unreadable (R4)</td><td>Full metric suite incl. mAP (§6.1); figure/proofread pass before submission</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout act">
+    <p class="t">The gift hidden in the rebuttal: 2,818 → 2,636</p>
+    <p>Under reviewer pressure, the team re-verified the dataset and removed ~182 pairs that "were photographed in the same scene but were not exact matches" — i.e., <b>the same-scene contamination problem is documented in your own AAAI-26 record</b>. This is the cleanest possible opening for the new paper: last year's benchmark was measurably contaminated by the exact failure mode (same scene, different shot) that this year's pose-based discriminator is built to catch. Use 2,636 as the verified count going forward, and tell this story in the introduction.</p>
+    <p><b>Reusable rebuttal assets</b> (locate them now — they cut the sprint's workload): the stratified 1,000-pair test set; the DINOv2 and Du-et-al.-baseline runs; the aggressive-augmentation study (t7); the Sha Fei 340-pair external validation. Several Table-A rows may already be half-done.</p>
+  </div>
 </section>
 
 <!-- ================================================================ -->
@@ -364,7 +409,7 @@
 
   <h3><span class="chip fatal">Fatal</span> F3 — Recall is measured on a selection-biased denominator</h3>
   <p>Labels exist only for pairs that already survived top-10 retrieval and the keypoint-count filter, so "R 96.3 / 98.4" is recall <em>over pipeline survivors</em> — the historian's real question ("what do I miss?") is unanswered, and retrieval-stage misses are invisible. The eval script compounds this: it counts <code>needs_review</code>/unlabeled pairs as false positives, so its precision is a different statistic from the hand-review precision, and nobody can currently say which produced 86.7/90.2.<br>
-  <b>Fix:</b> (a) name the metric "verification P/R conditional on the candidate set" in the paper; (b) run the <b>end-to-end recall audit</b> — push the 2,818 verified NCR-Match pairs through every stage and report a per-stage survival table (§6.4); (c) reconcile the eval script with the hand-review protocol and report "Unsure" as a first-class outcome.</p>
+  <b>Fix:</b> (a) name the metric "verification P/R conditional on the candidate set" in the paper; (b) run the <b>end-to-end recall audit</b> — push the 2,636 verified NCR-Match pairs (the rebuttal's refined set) through every stage and report a per-stage survival table (§6.4); (c) reconcile the eval script with the hand-review protocol and report "Unsure" as a first-class outcome.</p>
 
   <h3><span class="chip fatal">Fatal</span> F4 — No expert validation, no measured impact</h3>
   <p>The ~1,279 labeled pairs were hand-reviewed by a single unnamed annotator with no codebook, no inter-annotator agreement, and "Unsure" silently excluded — while the methodology essay publicly claims the system collapses "months of manual comparison." For AISI, this is the difference between an application paper and a CV paper wearing a social-impact hat.<br>
@@ -390,6 +435,10 @@
   <h2><span class="secno">5</span>Two-Paper Strategy &amp; the Agentic Question</h2>
 
   <h3>5.1 Is the pipeline without the agentic network enough for AAAI?</h3>
+  <div class="callout">
+    <p class="t">A lesson the AAAI-26 reviews make unavoidable</p>
+    <p>Last year's rejection <b>was an AISI rejection</b> — and two of its four reviewers still wrote uncompromising CV-methods reviews. The track's tolerance for limited novelty did not save a paper whose Quality-of-Evaluation scores were Poor. Conclusion: whichever track you choose, the baseline/ablation program in §6–7 is non-negotiable; the AISI-specific additions (expert studies, release, findings, ethics) come <em>on top of</em> methods rigor, not instead of it. The encouraging flip side: significance scores were fine, and the two dimensions that sank the paper — evaluation quality and path-to-practice — are precisely the two this plan targets, with no new model required.</p>
+  </div>
   <p><b>Main track: yes, cleanly</b> — provided the ablation/baseline program in §6–7 lands. The exact-copy discriminator with a verified-novel pose signal, a rigorous multi-shard protocol, and the NCR-Match benchmark is a coherent, competitive main-track applications/methods paper. Adding an unevaluated VLM layer to it would <em>weaken</em> it: it dilutes the methods story, spends scarce pages, and hands reviewers a fresh soundness objection.</p>
   <p><b>AISI without the agentic module: possible, but not with the current evidence.</b> The panel's consensus: the pipeline alone, evidenced only by shard-level P/R/F1, is "a main-track paper wearing a DH hat" — the exact profile AISI reviewers are trained to reject. It clears the AISI bar only if the <b>compensating package</b> all lands:</p>
   <ol>
@@ -427,7 +476,7 @@
   </ol>
 
   <h3>6.1 Retrieval baselines (Table A) — "why your fused model?"</h3>
-  <p>Off-the-shelf, frozen, identical preprocessing, Recall@1/5/10/15 on NCR-Match with the 42K working corpus as distractors: <b>SSCD</b> (the canonical copy-detection descriptor), <b>DINOv2 and DINOv3 global features</b>, <b>CLIP or SigLIP-2</b>, the old JOCCH ViT ensemble (existing weights), your DINOv3 fusion, the two VGGT-feature variants (existing weights), plus two isolating rows: DINOv3-alone + SSL head (does the ensemble beat its best member?) and fusion-without-SSL (does the learned head matter?). ≈2–3 Colab days total; all public checkpoints.</p>
+  <p>Off-the-shelf, frozen, identical preprocessing, Recall@1/5/10/15 <b>plus mAP</b> (explicitly requested by R3) on NCR-Match with the 42K working corpus as distractors: <b>SSCD</b> (the canonical copy-detection descriptor), <b>DINOv2 and DINOv3 global features</b>, <b>CLIP or SigLIP-2</b>, the old JOCCH ViT ensemble (existing weights), your DINOv3 fusion, the two VGGT-feature variants (existing weights), plus two isolating rows: DINOv3-alone + SSL head (does the ensemble beat its best member?) and fusion-without-SSL (does the learned head matter?). ≈2–3 Colab days total; all public checkpoints.</p>
 
   <h3>6.2 Verification ablations (Table B) — the table that carries the novelty claim</h3>
   <p>Fixed candidate set (the labeled pairs), Shard 1 dev / Shard 2 validation / Shard 3 test, P/R/F1 + PR-AUC + McNemar vs. the full pipeline. Key rows, cheapest first — most are free post-processing over stored manifests once 6.0 is done:</p>
@@ -444,7 +493,7 @@
       <tr><td class="num">B10</td><td>MASt3R relative pose, same protocol</td><td>The strongest "why not X" alternative pose head</td><td class="num">≈3 A100-h</td></tr>
       <tr><td class="num">B12/B13</td><td>Alignment off / raw-vs-filtered alignment keypoints</td><td>Isolates the alignment step</td><td class="num">≈2 A100-h</td></tr>
       <tr><td class="num">B14</td><td>Matcher swap: LightGlue for ASpanFormer</td><td>Modernity check on the 2022-era matcher</td><td class="num">≈4 A100-h</td></tr>
-      <tr><td class="num">B15</td><td>Matcher swap: RoMa (stretch)</td><td>Cut first if behind schedule</td><td class="num">≈6 A100-h</td></tr>
+      <tr><td class="num">B15</td><td>Matcher swap: RoMa — <b>must-run</b></td><td>An AAAI-26 reviewer named RoMa explicitly as likely better than ASpanFormer; either beat it or adopt it</td><td class="num">≈6 A100-h</td></tr>
     </tbody>
   </table></div>
 
@@ -452,12 +501,13 @@
   <p>All CPU, from cached manifests: (i) inlier-ratio 0.30→0.90 F1 curves per shard with 0.65 marked; (ii) full ROC/PR over the pose score with 2.13 marked; (iii) a 2-D F1 heatmap over (inlier, pose) on Shard 1 with the chosen operating point, replotted on Shard 3 to show the plateau transfers; (iv) retrieval top-K 5→15.</p>
 
   <h3>6.4 End-to-end recall audit — the honest number</h3>
-  <p>Run the 2,818 verified NCR-Match pairs (and shard known-positives) through every stage at frozen thresholds and report the survival table: % of known-true pairs alive after retrieval top-10 → keypoint filter → inlier filter → pose filter. This converts the selection-biased "recall over survivors" into an application-level answer to <em>"what does the historian miss?"</em> — and per-stage loss attribution tells you where to spend future effort.</p>
+  <p>Run the 2,636 verified NCR-Match pairs (the rebuttal's refined set; also report the 182 removed same-scene pairs as labeled hard negatives — they are free ground truth for the discriminator) and shard known-positives through every stage at frozen thresholds and report the survival table: % of known-true pairs alive after retrieval top-10 → keypoint filter → inlier filter → pose filter. This converts the selection-biased "recall over survivors" into an application-level answer to <em>"what does the historian miss?"</em> — and per-stage loss attribution tells you where to spend future effort.</p>
 
   <h3>6.5 Pose-signal validity controls — making "pose-aware" mean something</h3>
   <ul>
     <li><b>Synthetic battery:</b> take ~200 labeled exact-copy pairs; apply controlled crops, rotations, halftone simulation, mild perspective warps; show pose scores stay sub-threshold. This documents the degenerate picture-of-a-picture behavior as a measured feature rather than an assumption.</li>
     <li><b>Per-component distributions:</b> violin/ROC plots of each pose component (x/y-translation, rotation, fov, z) for exact-copy vs. same-scene labeled pairs — the empirical justification for the component weighting, currently asserted from anecdote.</li>
+    <li><b>Crop-stage QC audit (reviewer-requested):</b> R3 asked for sensitivity to YOLOv11 cropping errors; the rebuttal answered ">98% detection, manually checked" without evidence. Formalize it: detection precision/recall on a 100-page audited sample, plus one sentence on failure handling when layout detection misses.</li>
   </ul>
 
   <h3>6.6 The human evidence (AISI-critical; start recruiting now)</h3>
@@ -611,13 +661,12 @@
 
   <h3>Cut order if the schedule slips</h3>
   <ol>
-    <li>RoMa matcher swap (B15);</li>
     <li>3-seed retrain → single seed, disclosed;</li>
     <li>VLM condition (i) → N=60, grounded condition only;</li>
     <li>Jinchaji verification labeling → retrieval-only transfer;</li>
     <li>Transductive control → disclosed limitation.</li>
   </ol>
-  <p><b>Never cut:</b> the committed heuristic (§6.0), Shard-3 test labeling, rows B2/B8/B11, sensitivity curves, bootstrap CIs, and the supplementary code+data package — these are, item for item, the failures named in the AAAI-26 rejection's own reproducibility checklist.</p>
+  <p><b>Never cut:</b> the committed heuristic (§6.0), Shard-3 test labeling, rows B2/B8/B11, <b>the RoMa comparison (B15 — named in the AAAI-26 reviews)</b>, sensitivity curves, bootstrap CIs, and the supplementary code+data package — these are, item for item, the failures named in the AAAI-26 reviews and the rejection's own reproducibility checklist.</p>
 </section>
 
 <!-- ================================================================ -->
@@ -689,18 +738,18 @@
   <h2><span class="secno">12</span>Open Questions for You</h2>
   <p class="section-kicker">Answers to these change the plan's details (not its shape). Send them over whenever.</p>
   <ol>
-    <li><b>Do you have the AAAI-26 review texts?</b> This report reverse-engineered the rejection from the submission's own weaknesses; the actual reviews would let us confirm and target specific objections (and AAAI-27 has no resubmission-disclosure requirement, so this is purely for our benefit).</li>
+    <li><b><s>Do you have the AAAI-26 review texts?</s> Resolved</b> — received July 6 and incorporated (§3.3). Follow-up: <b>where do the rebuttal-era artifacts live</b> (the stratified 1,000-pair test set, the DINOv2 / Du-et-al. baseline runs, the augmentation study, the Sha Fei 340-pair validation, and the refined 2,636-pair list with the 182 removed same-scene pairs)? Locating them saves several days of Table-A work and gives the discriminator free labeled hard negatives.</li>
     <li><b>Is the off-repo "Experiment notebook" recoverable</b> — specifically the pose-component weights behind the 2.13 score and the exact inlier-ratio definition? If lost, we re-derive on Shard 1 by July 8 (§6.0), but recovery is cheaper and provenance-cleaner.</li>
     <li><b>Rights:</b> can CODH / Harvard-Yenching / the Jinchaji Institute confirm in writing, before July 31, that (a) an annotation-only release keyed to public archive identifiers is acceptable, and (b) ideally, pair crops for a subset? Who is the fastest contact at each?</li>
     <li><b>People:</b> who is the second (ideally third) annotator for the codebook relabeling, and can you name 4–6 historians/grad students for the time-saved study? Can you personally commit ~2.5 days (Jul 19–22) to blind-grade the VLM reports?</li>
     <li><b>One paper or two?</b> The plan assumes both (per the onboarding goal). If the human-evidence gate in §5.3 fails by July 10, we fall back to main-track-only — decide then, not later.</li>
-    <li><b>Confirming the corpus identity:</b> the 42,773-image working set is the North China Railway / Hokushi material (i.e., NCR-Match's parent corpus), correct? The paper's dataset section needs its exact provenance and the relationship to the 2,818 verified pairs stated precisely.</li>
+    <li><b>Confirming the corpus identity:</b> the 42,773-image working set is the North China Railway / Hokushi material (i.e., NCR-Match's parent corpus), correct? The paper's dataset section needs its exact provenance and the relationship to the 2,636 verified pairs stated precisely.</li>
     <li><b>Compute:</b> is anything beyond intermittent Colab A100 available (NUS SoC cluster via Prof. Prabhu?)? The 85 GPU-hour plan fits Colab, but a reserved GPU removes the biggest schedule risk (the 13-hour Shard-3 job).</li>
     <li><b>Repo visibility:</b> is <code>JordanLow/ImageSimilarity</code> public? If so, keep this strategy document and the unpublished results off the default branch until after submission — double-blind reviewers finding shard results attached to named accounts is an anonymity risk.</li>
   </ol>
 
   <hr>
-  <p class="footnote">Sources used: the AAAI-26 rejected submission (10 pp.), the 2026 experiments log, the JOCCH 2024 paper, the internship onboarding document, the <code>ImageSimilarity</code> repository (full code audit), the Digital Orientalist essay (May 29, 2026), the official AAAI-27 CFP/AISI/submission/policy pages, AISI proceedings 2023–26, and an adversarial novelty search over arXiv/Semantic Scholar (July 6, 2026). Reviewer-panel findings were generated by three independent adversarial reviews against these materials and cross-checked; deadline, novelty, and model-availability claims were separately verified.</p>
+  <p class="footnote">Sources used: the AAAI-26 rejected submission (10 pp.), <b>the official AAAI-26 OpenReview record for Submission #879 (four reviews, meta-review, rebuttals, decision — added in Rev. 2)</b>, the 2026 experiments log, the JOCCH 2024 paper, the internship onboarding document, the <code>ImageSimilarity</code> repository (full code audit), the Digital Orientalist essay (May 29, 2026), the official AAAI-27 CFP/AISI/submission/policy pages, AISI proceedings 2023–26, and an adversarial novelty search over arXiv/Semantic Scholar (July 6, 2026). Reviewer-panel findings were generated by three independent adversarial reviews against these materials and cross-checked; deadline, novelty, and model-availability claims were separately verified. The panel's diagnosis was subsequently confirmed by the official reviews (§3.3).</p>
 </section>
 
 </div>
