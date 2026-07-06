@@ -232,7 +232,7 @@
       <span><b>Paper deadline:</b> July 28 (22 days)</span>
       <span><b>Supplementary:</b> July 31</span>
       <span><b>Venue:</b> AAAI-27, Montréal, Feb 16–23 2027</span>
-      <span><b>Rev. 4:</b> single-paper decision, plain-language pass, Colab workload budget, licensing verified — <b>all changes since Rev. 2 are marked in amber</b></span>
+      <span><b>Rev. 5:</b> adds the second novelty sweep (§3.2.1) and the related-work reuse plan (§10.1–10.2) on top of Rev. 4 — <b>all changes since Rev. 2 are marked in amber</b></span>
     </div>
   </div>
 </header>
@@ -271,6 +271,7 @@
       <li><b>Licensing verified:</b> the North China Railway Archive images and metadata are published under CC BY 4.0 (free reuse with attribution), which removes the biggest release blocker (§4-F5).</li>
       <li><b>Plain-language explainers added</b> where the previous draft was too dense: what "reproducible from the repo" concretely requires (§4-F2), why the cheap-pose comparison is unavoidable (§6.2), what already exists vs. what must be built for cached-manifest ablations (§6.0), and exactly how to report a multi-stage funnel without misleading anyone (§7.6).</li>
       <li>The rejected AAAI-26 submission will <b>not be cited or mentioned</b> in the new paper; the published JOCCH 2024 paper <b>will</b> be cited in third person (§3.3).</li>
+      <li><b>Rev. 5:</b> a second, deeper novelty sweep (~5,000 citing papers screened) — the pose-signal claim <b>holds at ~85% confidence</b>, with tightened wording and eight new adjacent works to cite (§3.2.1); plus a paragraph-by-paragraph plan for reusing last year's related-work section (§10.2). Note the closest rival dataset, FORBIN (April 2026), and the self-preemption duty to cite the team's JCC 2025 article.</li>
     </ul>
     <p class="footnote">Reading guide: engineering-facing sections are §4 (what must be fixed), §6 (experiments and workload), §7 (evaluation protocol), §9 (timeline), §11 (repo fixes, file:line). PI-facing sections are §2, §3, §5, §6.6 (annotation and expert studies), §12 (open decisions).</p>
   </div>
@@ -368,6 +369,28 @@
     </tbody>
   </table></div>
   <p>Recommended wording: <em>"the novelty lies in applying inferred-pose discrimination to the copy-detection polarity — identity of capture vs. same scene — on cross-domain archival pairs,"</em> not "first to use these models for pairwise verification." Also cite Computational Re-Photography (TOG 2010, the ancestor of pose-delta-between-photos) and the IND/NIND near-duplicate taxonomy (Chum et al. 2007) to name the task formally.</p>
+
+  <h4>3.2.1 Second, deeper novelty sweep (July 6) — verdict and tightened wording <span class="chip updated">Updated</span></h4>
+  <div class="rev-block">
+    <p><b>Verdict: the method-novelty claim HOLDS, at roughly 85% confidence.</b> A second adversarial sweep exhaustively screened the citation graphs of every relevant 3D foundation model (VGGT: all 1,422 citing papers; DUSt3R ~2,000; MASt3R ~950; plus Doppelgangers/++, Reloc3r, Pi3, VGGT-SLAM, MapAnything) and the copy-detection canon (DISC21, SSCD, AnyPattern and their citations), plus the image-phylogeny, sensor-forensics, and recapture-detection literatures — <b>no published or preprint work uses feed-forward-3D-model camera pose to separate same-exposure variants from same-scene re-shots.</b> Residual risk: mentions buried in full text only, and June–July 2026 preprints not yet indexed.</p>
+    <p><b>But the sweep found prior art that reshapes how the claim must be written:</b></p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>New finding</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><b>Dias, Goldenstein &amp; Rocha, image phylogeny forests</b> (TIFS 2012; Forensic Science Int'l 2013)</td><td><b>The exact-copy vs. same-scene dichotomy was formally defined 13 years ago</b> — "near-duplicate images" (chain of transforms from one source) vs. "semantically similar images" (same camera, "different point in space and time"). The paper cannot claim to have identified the problem; the claim is the <em>decision mechanism</em> (pose) and the <em>domain</em> (archival photo-to-halftone). Cite prominently.</td></tr>
+        <tr><td><b>Torr's GRIC / model selection</b> (2000)</td><td>Choosing homography (planar/no parallax) vs. fundamental matrix (parallax) per image pair is the classical ancestor of the pose test. Pre-empt "this is just H-vs-F selection" by citing it and stating what is new: halftone-robust dense matching + a learned metric pose from a 3D foundation model + the forensic decision framing.</td></tr>
+        <tr><td><b>NDEC / Asymmetrical Similarity Learning</b> (AAAI 2023)</td><td>The closest existing benchmark formulation — hard negatives that are "inherently similar" rather than edited copies, at the same venue family. Must contrast: theirs is born-digital, appearance-only; yours is curated same-scene/seconds-apart negatives across the photo/halftone domain gap.</td></tr>
+        <tr><td><b>"From Same Photo" (arXiv:1809.06200)</b></td><td>2018 paper detecting whether two face crops come from the same photograph (to expose kinship-benchmark bias). Same-photo discrimination exists as a concept — via 2D appearance on faces, no geometry, never extended to provenance. Cite and distinguish.</td></tr>
+        <tr><td><b>PRNU sensor forensics</b> (Lukáš/Fridrich/Goljan TIFS 2006; Goljan et al., "Camera ID from Printed Images," SPIE 2008)</td><td>A reviewer may ask "why not sensor-noise forensics for same-exposure decisions?" The pre-empt is threefold and strong: (a) WWII negatives are film — PRNU is a digital-sensor artifact that does not exist here; (b) a device fingerprint identifies the <em>camera</em>, not the <em>exposure</em> — two frames seconds apart share it, so it answers the wrong question; (c) halftone screening plus generational duplication destroys the high-frequency channel (documented in the SPIE 2008 paper itself). Half a paragraph converts this from an attack into support.</td></tr>
+        <tr><td><b>Recapture-detection family</b> (photo-of-photo/screen detection; surveys + industry patents using planarity/depth cues)</td><td>Adjacent intuition (a reprint is geometrically flat) in a single-image, anti-spoofing setting. Cite as a family; distinguish: pairwise provenance decision, not single-image attack detection.</td></tr>
+        <tr><td><b>Transductive near-duplicate detection in scanned photo collections</b> (arXiv:2410.19437)</td><td>The archival near-duplicate setting with 2D descriptors only — confirms the gap in exactly your domain. Cite.</td></tr>
+        <tr><td><b>Provenance-graph revival</b> (Moreira et al. TIP 2018; NIST MFC provenance protocols; 2024–25 ViT-based pipelines)</td><td>Provenance analysis builds graphs over near-duplicates with 2D features/compression artifacts — no pose anywhere. Cite Moreira + NIST for evaluation norms; position pose as the first geometric operationalization of the phylogeny boundary.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Tightened claim wording (supersedes the earlier suggestion — adopt this):</b> <em>"While feed-forward 3D foundation models have been used to verify whether two images depict the same surface or place (Doppelgangers++, VGGT-SLAM 2.0), and copy detection has relied on 2D appearance descriptors with same-scene shots treated as negatives by construction (DISC21, SSCD, NDEC), we are — to our knowledge — the first to use the relative camera pose inferred by such models as a provenance signal separating re-editions of the same exposure (crops, edits, halftone reprints) from distinct exposures of the same scene."</em></p>
+    <p><b>Dataset-novelty claim: holds only with every qualifier present.</b> The defensible sentence is: the first <b>public</b> benchmark with <b>exposure-identity vs. same-scene-negative labels</b> on <b>cross-domain (photograph vs. halftone print)</b> <b>archival</b> material. Drop any one qualifier and a counterexample exists (NDEC has public hard negatives, born-digital; California-ND has IND/NIND labels, single-domain; EyCon and the new <b>FORBIN</b> dataset (JOHD, April 2026, 120K press photos, reuse-tracking agenda) are public archival halftone corpora <b>without pair ground truth</b>).</p>
+    <p><b>Two strategic notes.</b> (1) <b>The window is closing:</b> the EyCon/HighVision group (Bloch, Foliard et al.) has the corpus (FORBIN + <em>L'Illustration</em>), the halftone method (MTAP 2025), fresh ANR funding, and names reuse tracking as its next task — submitting the benchmark this cycle, not next, has real option value. (2) <b>The biggest preemption risk is self-preemption:</b> any reviewer searching the domain will find the team's JOCCH 2024 and <em>Journal of Chinese Cinemas</em> 2025 articles first. The paper must cite both in third person and state the delta in one crisp sentence — proof-of-concept circulation forensics then; a scaled, benchmarked, released matching system with a new verification signal now.</p>
+  </div>
 
   <h3>3.3 What the AAAI-26 reviews actually said — and the crosswalk to this plan</h3>
   <p>The official record: <b>Submission #879 to the AISI-26 track</b> (keyword "AISI: Computational Social Science and Humanities"), four reviews, decision <b>Reject</b> (Nov 4, 2025). Meta-review, condensed: <em>"the problem and dataset are interesting but reviewers are not persuaded by the novelty and contribution… a composition of several off-the-shelf models with limited contribution… the evaluation only considered a variation of the method and did not consider many other models on cross-domain matching… the dataset only looks at one publication source and is limited to evaluate generalizability."</em></p>
@@ -800,6 +823,36 @@
         <li>Non-CS anchors: Yurchak (manifest intertextuality), Chen Li ("Invisible Archives"), Arnold &amp; Tilton (distant viewing), Boudana et al. (iconic-photo republication)</li>
       </ul>
     </div>
+  </div>
+
+  <h3>10.1 Additions from the July 6 deep sweep <span class="chip updated">Updated</span></h3>
+  <div class="rev-block">
+    <p>New must-cite or should-cite items surfaced by the second literature sweep (details and reasons in §3.2.1):</p>
+    <ul>
+      <li><b>Phylogeny &amp; provenance:</b> Dias/Goldenstein/Rocha (TIFS 2012; FSI 2013 — the formal NDI-vs-SSI dichotomy); Moreira et al., Image Provenance Analysis at Scale (TIP 2018); NIST MediFor provenance protocols; the 2024–25 ViT-based provenance pipelines (arXiv:2408.14170, 2506.23707).</li>
+      <li><b>Geometry &amp; verification:</b> Torr's GRIC model selection (2000); VGGT-SLAM 2.0 (2026); "From Same Photo" (arXiv:1809.06200); the recapture-detection family (survey arXiv:2407.04169); transductive archival near-duplicate detection (arXiv:2410.19437).</li>
+      <li><b>Forensics pre-empt:</b> PRNU line — Lukáš/Fridrich/Goljan (TIFS 2006) and Goljan et al., Camera Identification from Printed Images (SPIE 2008) — cited to explain why sensor forensics cannot answer the exposure-identity question on film-era halftone material.</li>
+      <li><b>Copy-detection benchmarks:</b> NDEC / Asymmetrical-Similarity Learning (AAAI 2023 — the closest hard-negative benchmark, same venue family); California-ND; Matatov et al. 2022 (near-duplicates in misinformation contexts).</li>
+      <li><b>Archival competitors:</b> <b>FORBIN dataset</b> (JOHD, April 2026 — closest rival dataset, no pair ground truth); SCIA 2025 Helsinki ornament-reuse paper; and the team's own <em>Journal of Chinese Cinemas</em> 2025 article (cite in third person, state the delta — see §3.2.1).</li>
+    </ul>
+  </div>
+
+  <h3>10.2 Reusing last year's related-work section — paragraph-by-paragraph verdict <span class="chip updated">Updated</span></h3>
+  <div class="rev-block">
+    <p><b>Short answer: yes, roughly half survives.</b> Reviewer R2 explicitly praised the old literature review ("covers both CV and digital humanities contexts"), and the rejected text is unpublished, so reusing your own wording raises no self-plagiarism issue. Verdict by section of the old draft:</p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Old section</th><th>Verdict</th><th>What to change</th></tr></thead>
+      <tbody>
+        <tr><td>CBIR &amp; deep metric learning (Schroff; SimCLR; ViT; El-Nouby)</td><td><span class="chip good">Keep, trim</span></td><td>Still-correct background for the retrieval stage. Add DINOv2/v3 and CLIP/SigLIP (they are now baselines). Keep it short — retrieval is a component, not a contribution.</td></tr>
+        <tr><td>Near-duplicate &amp; copy-detection benchmarks (Copydays; DISC21)</td><td><span class="chip good">Keep, extend</span></td><td>The positioning ("benchmarks are digital-domain; ours is photo-to-print") survives. Add by name: SSCD, NDEC, AnyPattern, Chum 2007, Dias 2013 phylogeny. Re-aim the closing sentence at the exact-copy vs. same-scene discrimination task.</td></tr>
+        <tr><td>Depth-augmented vision (Depth Anything; MiDaS; ZoeDepth; DeFeat-Net)</td><td><span class="chip fatal">Cut ~80%</span></td><td>The new pipeline uses no depth model — this whole rationale is dead weight and would invite the old "why depth" attack. Salvage only the two cross-domain-retrieval sentences (Shrivastava 2011; Hu 2023). <b>Replace</b> with a new subsection: 3D foundation models &amp; pose as a forensic signal (VGGT, DUSt3R/MASt3R, Reloc3r, Doppelgangers/++, VGGT-SLAM 2.0, Computational Re-Photography, Torr GRIC, recapture family, PRNU pre-empt).</td></tr>
+        <tr><td>Two-stage retrieval &amp; learned correspondence (SIFT+RANSAC; ASpanFormer; SuperGlobal)</td><td><span class="chip good">Keep, update</span></td><td>Core survives, including the nice "learned form of the human side-by-side verification" line. Add LightGlue, RoMa (v1/v2 — reviewer-named), MASt3R. Delete every "first in historical image analysis" superlative; the tightened claim in §3.2.1 replaces them.</td></tr>
+        <tr><td>Historical image reuse &amp; datasets (Lang; Dutta; EyCon; Smits ILN)</td><td><span class="chip good">Keep, extend</span></td><td>The praised section. Add: EyCon halftone paper (MTAP 2025) with one positioning paragraph, FORBIN (2026), SCIA 2025, arXiv:2410.19437; the JOCCH-2024 + JCC-2025 self-delta sentence; update all pair counts to 2,636.</td></tr>
+        <tr><td><em>(did not exist)</em> Misinformation / out-of-context reuse</td><td><span class="chip minor">Write new</span></td><td>COSMOS (AAAI-23 AISI), SNIFFER, out-of-context detection — the bridge from 1943 recaptioning to the track's misinformation cluster; plus the non-CS anchors (Yurchak, Chen Li, Boudana, Arnold &amp; Tilton) in third person.</td></tr>
+        <tr><td><em>(did not exist)</em> Phylogeny/provenance + forensics pre-empt</td><td><span class="chip minor">Write new</span></td><td>One short paragraph each: the Dias-line formalization (§3.2.1), and the PRNU why-not paragraph.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Net effect: ≈50% of the old related-work text is reusable with edits, ≈20% is cut outright (depth), and two short new subsections must be written. Budget one writing day within the §9 plan — it fits inside the existing "intro · related" bar.</p>
   </div>
 </section>
 
