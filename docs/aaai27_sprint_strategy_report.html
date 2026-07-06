@@ -1,0 +1,706 @@
+<title>AAAI-27 Sprint Assessment — NCR-Match / Digital Historical Forensics</title>
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hairline: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #1c5cab;
+    --accent-soft: #e3edf9;
+    --accent-ink: #104281;
+    --fatal: #d03b3b;      --fatal-bg: #fae7e7;   --fatal-ink: #8f2222;
+    --major: #ec835a;      --major-bg: #fdeee7;   --major-ink: #8f3d1a;
+    --minor: #fab219;      --minor-bg: #fbf3dc;   --minor-ink: #7a5606;
+    --good:  #0ca30c;      --good-bg:  #e6f4e6;   --good-ink:  #0a5d0a;
+    --s1: #2a78d6; --s2: #1baf7a; --s3: #eda100; --s4: #008300; --s5: #4a3aa7;
+    --serif: "Charter", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f2f1ec; --ink-2: #c3c2b7;
+      --muted: #898781; --hairline: #2c2c2a; --border: rgba(255,255,255,0.10);
+      --accent: #6da7ec; --accent-soft: #16233a; --accent-ink: #9ec5f4;
+      --fatal-bg: #3a1717; --fatal-ink: #f0a0a0; --fatal: #e66767;
+      --major-bg: #3a2317; --major-ink: #f2b596; --major: #ec835a;
+      --minor-bg: #35290c; --minor-ink: #ecc76a; --minor: #fab219;
+      --good-bg: #14300f;  --good-ink: #8fd58f;  --good: #0ca30c;
+      --s1: #3987e5; --s2: #199e70; --s3: #c98500; --s4: #008300; --s5: #9085e9;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f2f1ec; --ink-2: #c3c2b7;
+    --muted: #898781; --hairline: #2c2c2a; --border: rgba(255,255,255,0.10);
+    --accent: #6da7ec; --accent-soft: #16233a; --accent-ink: #9ec5f4;
+    --fatal-bg: #3a1717; --fatal-ink: #f0a0a0; --fatal: #e66767;
+    --major-bg: #3a2317; --major-ink: #f2b596; --major: #ec835a;
+    --minor-bg: #35290c; --minor-ink: #ecc76a; --minor: #fab219;
+    --good-bg: #14300f;  --good-ink: #8fd58f;  --good: #0ca30c;
+    --s1: #3987e5; --s2: #199e70; --s3: #c98500; --s4: #008300; --s5: #9085e9;
+  }
+  :root[data-theme="light"] {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e;
+    --muted: #898781; --hairline: #e1e0d9; --border: rgba(11,11,11,0.10);
+    --accent: #1c5cab; --accent-soft: #e3edf9; --accent-ink: #104281;
+    --fatal: #d03b3b; --fatal-bg: #fae7e7; --fatal-ink: #8f2222;
+    --major: #ec835a; --major-bg: #fdeee7; --major-ink: #8f3d1a;
+    --minor: #fab219; --minor-bg: #fbf3dc; --minor-ink: #7a5606;
+    --good: #0ca30c;  --good-bg: #e6f4e6;  --good-ink: #0a5d0a;
+    --s1: #2a78d6; --s2: #1baf7a; --s3: #eda100; --s4: #008300; --s5: #4a3aa7;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ---------- header ---------- */
+  header.masthead {
+    position: relative; margin: 0 -24px; padding: 56px 24px 40px;
+    background:
+      radial-gradient(circle at 1.5px 1.5px, color-mix(in srgb, var(--accent) 26%, transparent) 1.5px, transparent 1.6px);
+    background-size: 14px 14px;
+  }
+  header.masthead .inner {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 36px 40px; max-width: 940px; margin: 0 auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .eyebrow {
+    font-family: var(--sans); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--serif); font-size: clamp(28px, 4.6vw, 42px); line-height: 1.15;
+    margin: 0 0 12px; text-wrap: balance; font-weight: 700;
+  }
+  .subtitle { color: var(--ink-2); font-size: 17px; max-width: 64ch; margin: 0 0 18px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 13.5px; color: var(--muted); }
+  .meta-row b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- typography ---------- */
+  h2 {
+    font-family: var(--serif); font-size: 27px; line-height: 1.2; margin: 64px 0 6px;
+    text-wrap: balance; font-weight: 700;
+  }
+  h2 .secno { color: var(--accent); font-family: var(--mono); font-size: 19px; margin-right: 10px; font-weight: 600;}
+  h3 { font-family: var(--sans); font-size: 18.5px; margin: 34px 0 8px; font-weight: 700; }
+  h4 { font-family: var(--sans); font-size: 15.5px; margin: 24px 0 6px; font-weight: 700; }
+  p, li { max-width: 76ch; }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 24px; margin: 10px 0; }
+  li { margin: 5px 0; }
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; background: color-mix(in srgb, var(--ink) 6%, transparent); padding: 1px 5px; border-radius: 4px; }
+  .lede { font-size: 17.5px; color: var(--ink-2); }
+  .section-kicker { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+  hr { border: none; border-top: 1px solid var(--hairline); margin: 48px 0; }
+
+  /* ---------- verdict cards ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; margin: 26px 0 8px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .card .q { font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .card .a { font-family: var(--serif); font-size: 19px; line-height: 1.35; font-weight: 700; }
+  .card .d { font-size: 14.5px; color: var(--ink-2); }
+
+  /* ---------- chips ---------- */
+  .chip {
+    display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 2px 9px; border-radius: 999px; vertical-align: 1px;
+    font-family: var(--sans); white-space: nowrap;
+  }
+  .chip.fatal { background: var(--fatal-bg); color: var(--fatal-ink); border: 1px solid color-mix(in srgb, var(--fatal) 45%, transparent); }
+  .chip.major { background: var(--major-bg); color: var(--major-ink); border: 1px solid color-mix(in srgb, var(--major) 45%, transparent); }
+  .chip.minor { background: var(--minor-bg); color: var(--minor-ink); border: 1px solid color-mix(in srgb, var(--minor) 45%, transparent); }
+  .chip.good  { background: var(--good-bg);  color: var(--good-ink);  border: 1px solid color-mix(in srgb, var(--good) 45%, transparent); }
+  .chip.info  { background: var(--accent-soft); color: var(--accent-ink); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 6px; padding: 14px 18px; margin: 18px 0; font-size: 15px;
+  }
+  .callout.warn { border-left-color: var(--fatal); }
+  .callout.act { border-left-color: var(--good); }
+  .callout p { margin: 6px 0; }
+  .callout .t { font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+
+  blockquote {
+    margin: 18px 0; padding: 4px 22px; border-left: 3px solid var(--hairline);
+    color: var(--ink-2); font-family: var(--serif); font-size: 16.5px; font-style: italic;
+  }
+  blockquote .who { display: block; font-style: normal; font-family: var(--sans); font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* ---------- tables ---------- */
+  .tblwrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  thead th { font-size: 12px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 3%, var(--surface)); position: sticky; top: 0; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+  .dim { color: var(--muted); }
+
+  /* ---------- TOC ---------- */
+  nav.toc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 22px; margin: 30px 0; font-size: 14.5px;
+    columns: 2; column-gap: 32px;
+  }
+  nav.toc a { display: block; padding: 3px 0; border: none; color: var(--ink-2); break-inside: avoid; }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc a .n { font-family: var(--mono); color: var(--accent); font-size: 12.5px; margin-right: 8px; }
+  @media (max-width: 620px) { nav.toc { columns: 1; } }
+
+  /* ---------- gantt ---------- */
+  .gantt {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px 20px 14px; margin: 18px 0; overflow-x: auto;
+  }
+  .gantt-inner { min-width: 760px; }
+  .g-grid { display: grid; grid-template-columns: 168px repeat(26, 1fr); gap: 3px 0; align-items: center; }
+  .g-head { font-size: 10.5px; color: var(--muted); text-align: center; font-family: var(--mono); padding-bottom: 6px; }
+  .g-label { font-size: 12.5px; color: var(--ink-2); padding-right: 12px; line-height: 1.25; }
+  .g-track { grid-column: span 26; height: 0; }
+  .g-row-bg { position: relative; height: 22px; grid-column: 2 / -1; }
+  .bar {
+    position: absolute; top: 3px; height: 16px; border-radius: 4px; opacity: 0.92;
+    overflow: hidden;
+  }
+  .bar .bl {
+    position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+    font-size: 10px; color: #fff; white-space: nowrap; font-weight: 600; font-family: var(--sans);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .bar.lbl-out { overflow: visible; }
+  .bar.lbl-out .bl {
+    left: calc(100% + 6px); color: var(--ink-2); text-shadow: none; font-weight: 600;
+  }
+  .g-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 14px; font-size: 12.5px; color: var(--ink-2); }
+  .g-legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .g-milestones { position: relative; grid-column: 2 / -1; height: 26px; }
+  .ms { position: absolute; top: 0; font-size: 10.5px; color: var(--fatal-ink); font-weight: 700; transform: translateX(-50%); text-align: center; line-height: 1.2; }
+  .ms::before { content: "◆"; display: block; color: var(--fatal); font-size: 11px; }
+  .gantt-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+
+  /* ---------- misc ---------- */
+  details { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; margin: 12px 0; }
+  summary { cursor: pointer; font-weight: 600; font-size: 14.5px; }
+  .twocol { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 18px 0; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; }
+  .panel h4 { margin-top: 0; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { padding-left: 28px; position: relative; }
+  .checklist li::before { content: "☐"; position: absolute; left: 4px; color: var(--accent); font-size: 15px; }
+  .footnote { font-size: 13px; color: var(--muted); }
+  .kbd-sep { color: var(--hairline); margin: 0 8px; }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="inner">
+    <p class="eyebrow">Strategy Assessment · Confidential Draft</p>
+    <h1>Twenty Days to AAAI-27: What the Propaganda-Photo Forensics Project Must Do Now</h1>
+    <p class="subtitle">An evidence-based sprint plan for the NCR-Match / Digital Historical Forensics work — covering the AI for Social Impact (AISI) track requirements, the experiments still missing, a rigorous ablation protocol, and a verdict on the proposed Gemini agentic-report module.</p>
+    <div class="meta-row">
+      <span><b>Prepared:</b> July 6, 2026</span>
+      <span><b>Abstract deadline:</b> July 21 (15 days)</span>
+      <span><b>Paper deadline:</b> July 28 (22 days)</span>
+      <span><b>Supplementary:</b> July 31</span>
+      <span><b>Venue:</b> AAAI-27, Montréal, Feb 16–23 2027</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ================================================================ -->
+<section id="verdict">
+  <h2><span class="secno">1</span>The Verdict, Up Front</h2>
+  <p class="lede">You asked three questions. Here are the answers, each defended in detail below.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="q">Q1 · What must happen in 20 days?</div>
+      <div class="a">Fix evaluation hygiene and add the human evidence — before any new model work.</div>
+      <div class="d">The binding constraints are not model quality. They are: threshold leakage (Shard 1 was tuned <em>and</em> reported), a scoring heuristic that exists only in an off-repo notebook, recall measured on a selection-biased denominator, zero expert validation, and a dataset promised last year but never released. All five are fixable in this window. §4, §6–7.</div>
+    </div>
+    <div class="card">
+      <div class="q">Q2 · Enough without the agentic module?</div>
+      <div class="a">Yes for the main track. For AISI: yes, but only with the compensating package.</div>
+      <div class="d">The AISI rubric scores stakeholder evaluation, data release, and real-world evidence — not extra layers of AI. An <em>unevaluated</em> Gemini module would hurt you; expert validation + dataset release + new humanities findings + an ethics section can fully replace it. §5, §8.</div>
+    </div>
+    <div class="card">
+      <div class="q">Q3 · How to run rigorous ablations?</div>
+      <div class="a">Freeze Shard 1 as dev, label Shard 3 as untouched test, ablate from cached manifests.</div>
+      <div class="d">Declare Shard 1 the development set; report Shards 2–3 with frozen thresholds, bootstrap CIs, and McNemar tests. Most ablation rows are CPU post-processing over manifests you already have — the full grid costs ≈85 A100-hours. §6–7.</div>
+    </div>
+  </div>
+
+  <div class="callout act">
+    <p class="t">Core recommendation — split into two submissions</p>
+    <p>Your onboarding goal is already <em>two</em> AAAI-27 submissions, and AAAI-27 explicitly forbids transferring papers between the main track and AISI. Use that:</p>
+    <p><b>Paper 1 (Main Track):</b> the CV pipeline — the exact-copy vs. same-scene problem, the VGGT camera-pose forensic signal (novelty verified, see §3), full baselines and ablations, the NCR-Match benchmark.<br>
+    <b>Paper 2 (AISI):</b> the Digital Historical Forensics <em>system</em> — DHF framing, the constrained VLM per-pair report module with expert grading, the cross-propaganda-system transfer result (Hokushi → Jinchaji), the dataset release, ethics and deployment path.</p>
+    <p>The VLM module is <b>harmful inside Paper 1</b> (dilutes a methods story, adds an unreviewable dependency) and <b>load-bearing for Paper 2</b> (it is the thing that reads the "verbal envelope" the image pipeline cannot see). If capacity forces a single submission, the decision rule is in §5.3.</p>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <a href="#verdict"><span class="n">1</span>The verdict, up front</a>
+    <a href="#facts"><span class="n">2</span>Ground truth: deadlines, rubric, policies</a>
+    <a href="#standing"><span class="n">3</span>Where you actually stand</a>
+    <a href="#fatal"><span class="n">4</span>The five fatal issues (and the majors)</a>
+    <a href="#strategy"><span class="n">5</span>Two-paper strategy & the agentic question</a>
+    <a href="#experiments"><span class="n">6</span>The experiments you still need</a>
+    <a href="#ablation"><span class="n">7</span>The rigorous ablation protocol</a>
+    <a href="#vlm"><span class="n">8</span>The VLM module, done credibly</a>
+    <a href="#timeline"><span class="n">9</span>The 20-day plan</a>
+    <a href="#citations"><span class="n">10</span>Citation & positioning checklist</a>
+    <a href="#repo"><span class="n">11</span>Repository red flags (file:line)</a>
+    <a href="#questions"><span class="n">12</span>Open questions for you</a>
+  </nav>
+</section>
+
+<!-- ================================================================ -->
+<section id="facts">
+  <h2><span class="secno">2</span>Ground Truth: Deadlines, Rubric, Policies</h2>
+  <p class="section-kicker">Everything in this section was verified against official aaai.org pages on July 6, 2026.</p>
+
+  <h3>2.1 Deadlines — confirmed, AISI identical to main track</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Milestone</th><th>Date (all 11:59 PM UTC-12, AoE)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Abstract registration</b></td><td class="num">July 21, 2026</td></tr>
+      <tr><td><b>Full paper submission</b></td><td class="num">July 28, 2026</td></tr>
+      <tr><td><b>Supplementary material &amp; code</b></td><td class="num">July 31, 2026</td></tr>
+      <tr><td class="dim">Phase-1 rejection notifications</td><td class="num dim">September 24, 2026</td></tr>
+      <tr><td class="dim">Author feedback window</td><td class="num dim">October 19–25, 2026</td></tr>
+      <tr><td class="dim">Final decisions</td><td class="num dim">November 30, 2026</td></tr>
+      <tr><td class="dim">Camera-ready</td><td class="num dim">December 14, 2026</td></tr>
+      <tr><td class="dim">Conference (Montréal)</td><td class="num dim">February 16–23, 2027</td></tr>
+    </tbody>
+  </table></div>
+  <p class="footnote">Sources: <a href="https://aaai.org/conference/aaai/aaai-27/aisi-call/">AISI-27 call</a>, <a href="https://aaai.org/conference/aaai/aaai-27/main-technical-track-call/">main-track call</a>, <a href="https://aaai.org/conference/aaai/aaai-27/submission-instructions/">submission instructions</a>. Format: 7 pages of technical content + references + reproducibility checklist, AAAI two-column, fully double-blind. No paper transfer between main track and AISI.</p>
+
+  <h3>2.2 The AISI rubric — what reviewers actually score</h3>
+  <p>AISI is reviewed on a six-dimension rubric, explicitly <em>different</em> from the main track; papers are expected to score high on <em>several, not all</em>. The main-track call summarizes the difference: the track "emphasizes the fit between the techniques used and a problem of social importance, rather than simply rewarding technical novelty."</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Criterion</th><th>"Excellent" means…</th><th>Your current standing</th></tr></thead>
+    <tbody>
+      <tr><td><b>1. Significance of the problem</b></td><td>Significant social-impact problem not adequately addressed by the AI community</td><td><span class="chip good">Strong</span> — genuinely underserved; unique archives</td></tr>
+      <tr><td><b>2. Engagement with literature</b></td><td>Excellent understanding of literature <em>within and outside</em> CS</td><td><span class="chip minor">At risk</span> — the JOCCH/DHF scholarship never made it into the AAAI-26 text</td></tr>
+      <tr><td><b>3. Significance to the AI community</b></td><td>Technical novelty <em>or</em> improved scientific insight into AI in societal settings</td><td><span class="chip good">Strong if claimed narrowly</span> — pose-as-forensic-signal (§3.2)</td></tr>
+      <tr><td><b>4. Soundness</b></td><td>Claims well supported; strengths <em>and weaknesses</em> carefully evaluated</td><td><span class="chip fatal">Failing</span> — leakage, biased recall, no variance (§4)</td></tr>
+      <tr><td><b>5. Facilitation of follow-up</b></td><td>Open-source code, public datasets, clear usage instructions</td><td><span class="chip fatal">Failing</span> — NCR-Match promised in 2025, still unreleased; scoring code off-repo</td></tr>
+      <tr><td><b>6. Scope &amp; promise for social impact</b></td><td>Ideas already used in practice or immediately usable; clear path to deployment</td><td><span class="chip major">Missing evidence</span> — no expert study, no workflow numbers, no named partnership structure</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn">
+    <p class="t">The single most dangerous policy change</p>
+    <p>AAAI-27's reviewer instructions now state that claims that code or data <em>"will be released after acceptance or publication" must not be treated as evidence of reproducibility</em> — reviewers are told to assume unreleased material will never exist. Your AAAI-26 submission promised NCR-Match "upon the camera-ready deadline" and it was never released; a returning reviewer can check that. <b>The only cure is to deposit the actual package with the July 31 supplementary.</b></p>
+  </div>
+
+  <h3>2.3 Policies that touch your plan</h3>
+  <ul>
+    <li><b>Using a VLM inside the system is permitted.</b> AAAI policy governs manuscript preparation, not system architecture; the VLM's role must be documented in the paper, an AI system cannot be an author, and authors remain accountable for all content.</li>
+    <li><b>Gemini 3.1 Pro is real but in <em>preview</em></b> (announced Feb 19, 2026; Gemini API / Vertex AI, 1M-token context). Pin the exact model string and date; describe it as "available in preview." For reproducibility, run one open-weights VLM alongside it (Qwen3-VL is the strongest open family as of mid-2026). §8.</li>
+    <li><b>Anonymity:</b> cite the JOCCH paper, the <em>Journal of Chinese Cinemas</em> article, and the Digital Orientalist essay in third person. The AAAI-26 PDF contained leftover template text ("The remainder of this document are the original camera-ready instructions…") — under the tightened LLM-use and desk-reject policies this class of error is now a summary-rejection risk, not just an embarrassment.</li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<section id="standing">
+  <h2><span class="secno">3</span>Where You Actually Stand</h2>
+
+  <h3>3.1 Assets — better raw material than most of the AISI pile</h3>
+  <ul>
+    <li><b>A real problem with real partners.</b> Harvard-Yenching (Papers of Sha Fei), CODH/Kyoto (North China Railway Archive), the Institute of Jinchaji Pictorial — plus a PI who is the domain expert. Most AISI submissions would kill for this; it is currently invisible in the technical materials.</li>
+    <li><b>The new task framing is right.</b> "Exact same photograph (cropped/edited/halftoned) vs. same scene, different shot" is the false-positive class that actually matters for provenance claims — and it is precisely the hard-negative class that copy-detection benchmarks (DISC21, NDEC) treat as their frontier.</li>
+    <li><b>The Shard-2 transfer result is genuinely good evidence.</b> Thresholds frozen on Shard 1 (P 86.7 / R 96.3 / F1 91.3) replicated on Shard 2 at P 90.2 / R 98.4 / F1 94.1 — this is exactly the generalization story last year's reviewers were denied. It needs a clean protocol around it, not a better number.</li>
+    <li><b>A published methodology to frame it.</b> The Digital Orientalist essay gives the paper its intellectual spine: <em>"DHF uses scale to locate the singular and then reads it closely"</em>; <em>"the pipeline does not interpret; it retrieves."</em> Section 5 shows how to convert those sentences into rubric points and even into an evaluation metric.</li>
+  </ul>
+
+  <h3>3.2 The novelty claim — verified, with two neighbors to cite</h3>
+  <p>An adversarial literature search (arXiv metadata API, Semantic Scholar, ~14 query families) found <b>no published work as of July 2026</b> that uses inferred camera poses from a 3D foundation model (VGGT / DUSt3R / MASt3R) to discriminate exact-copy from same-scene-different-shot — in copy detection, provenance, or archival matching. The claim is defensible <em>if worded narrowly</em>. Two nearest neighbors must be cited and distinguished prominently rather than hoping reviewers miss them:</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Nearest prior art</th><th>What it does</th><th>How yours differs</th></tr></thead>
+    <tbody>
+      <tr><td><b>Doppelgangers</b> (ICCV 2023) &amp; <b>Doppelgangers++</b> (CVPR 2025)</td><td>Classifies whether two similar images show the same 3D surface vs. lookalike surfaces (for SfM disambiguation); ++ uses MASt3R 3D-aware features</td><td>Opposite polarity: they reject illusory matches of <em>different</em> surfaces; you separate <em>identical exposures</em> from different exposures of the <em>same</em> surface. Also: a Doppelgangers-style learned classifier is your obvious learned baseline (§7, row B11)</td></tr>
+      <tr><td><b>VGGT-SLAM 2.0</b> (2026)</td><td>VGGT internals as a training-free verifier rejecting false loop-closure matches</td><td>Same-scene verification in SLAM, not duplicate-vs-reshot forensics</td></tr>
+    </tbody>
+  </table></div>
+  <p>Recommended wording: <em>"the novelty lies in applying inferred-pose discrimination to the copy-detection polarity — identity of capture vs. same scene — on cross-domain archival pairs,"</em> not "first to use these models for pairwise verification." Also cite Computational Re-Photography (TOG 2010, the ancestor of pose-delta-between-photos) and the IND/NIND near-duplicate taxonomy (Chum et al. 2007) to name the task formally.</p>
+
+  <h3>3.3 Why the AAAI-26 submission died — and what has (and hasn't) changed</h3>
+  <p>Reading the rejected paper against its own reproducibility checklist tells the story: one results table with a single in-house baseline; thresholds chosen "empirically" with no sensitivity analysis; checklist self-reports of <em>no</em> code appendix, <em>no</em> variance or statistical tests, <em>no</em> compute specs; a dataset release promise; and leftover template prose. The 2026 pipeline is a real technical improvement — but as of today, <b>every one of those process failures is still present</b>, and three new ones have appeared (§4). The sprint is therefore mostly about process, not models.</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="fatal">
+  <h2><span class="secno">4</span>The Five Fatal Issues (and the Majors)</h2>
+  <p class="section-kicker">Consensus of a three-lens review panel (AISI senior PC member · CV methods reviewer · DH applications reviewer) run against your actual documents, results, and repository.</p>
+
+  <h3><span class="chip fatal">Fatal</span> F1 — Threshold leakage on Shard 1</h3>
+  <p>The inlier-ratio cutoff (0.65), the pose-score threshold (2.13), <em>and the pose-component weighting design itself</em> were all tuned on Shard 1's hand labels — and Shard 1's P/R/F1 is then reported as a headline result. Shard-1 numbers are training-set numbers. This is the same sin ("thresholds chosen empirically on the eval data") that helped kill the AAAI-26 submission.<br>
+  <b>Fix:</b> declare Shard 1 the dev set in the paper; label Shard 3 as an untouched test shard; report Shards 2–3 with everything frozen, plus sensitivity curves showing the operating point sits on a plateau, not a spike (§7).</p>
+
+  <h3><span class="chip fatal">Fatal</span> F2 — The published numbers are irreproducible from the repo</h3>
+  <p>The code audit's headline finding: the committed judge in <code>vggt_judge.py:532-533</code> implements a <em>different classifier</em> (global-similarity ≥ 0.90 AND unweighted-L1 pose shift ≤ 0.10) than the one that produced the logged results (inlier-ratio 0.65 + weighted 9-dim pose heuristic at 2.13). The inlier-ratio filter does not exist anywhere in the repo; the pose weights are undocumented and live only in an off-repo "Experiment notebook." <b>The public repository literally cannot reproduce the paper.</b><br>
+  <b>Fix (blocking, this week):</b> commit the notebook heuristic as <code>pose_scoring.py</code> with the weights as named constants; acceptance test = reproducing F1 91.3 / 94.1 bit-for-bit from the stored manifests. If the notebook is lost, re-derive on Shard 1 only (it is the dev set anyway) and freeze by July 8.</p>
+
+  <h3><span class="chip fatal">Fatal</span> F3 — Recall is measured on a selection-biased denominator</h3>
+  <p>Labels exist only for pairs that already survived top-10 retrieval and the keypoint-count filter, so "R 96.3 / 98.4" is recall <em>over pipeline survivors</em> — the historian's real question ("what do I miss?") is unanswered, and retrieval-stage misses are invisible. The eval script compounds this: it counts <code>needs_review</code>/unlabeled pairs as false positives, so its precision is a different statistic from the hand-review precision, and nobody can currently say which produced 86.7/90.2.<br>
+  <b>Fix:</b> (a) name the metric "verification P/R conditional on the candidate set" in the paper; (b) run the <b>end-to-end recall audit</b> — push the 2,818 verified NCR-Match pairs through every stage and report a per-stage survival table (§6.4); (c) reconcile the eval script with the hand-review protocol and report "Unsure" as a first-class outcome.</p>
+
+  <h3><span class="chip fatal">Fatal</span> F4 — No expert validation, no measured impact</h3>
+  <p>The ~1,279 labeled pairs were hand-reviewed by a single unnamed annotator with no codebook, no inter-annotator agreement, and "Unsure" silently excluded — while the methodology essay publicly claims the system collapses "months of manual comparison." For AISI, this is the difference between an application paper and a CV paper wearing a social-impact hat.<br>
+  <b>Fix:</b> the two cheap studies in §6.6 — a multi-annotator relabeling with Cohen's/Fleiss' kappa under a written codebook, and a small within-subjects historian time-saved study. Start recruiting <em>this week</em> from the existing JOCCH annotation network.</p>
+
+  <h3><span class="chip fatal">Fatal</span> F5 — Dataset and code release: promises are now worthless</h3>
+  <p>See §2.2. NCR-Match remains unreleased a year after being promised; AAAI-27 reviewers are instructed to disregard promises.<br>
+  <b>Fix:</b> deposit, don't promise. An <em>annotation-only</em> release avoids the image-rights problem entirely: pair IDs keyed to CODH's public North China Railway identifiers, match labels, trace annotations, the codebook, and a Gebru-style datasheet (provenance, labeling protocol, the archive's own Japanese-military selection bias, handling guidance for propaganda imagery). Email CODH / Harvard-Yenching / the Jinchaji Institute for written confirmation now.</p>
+
+  <h3>The majors</h3>
+  <ul>
+    <li><span class="chip major">Major</span> <b>No external baselines.</b> In 2026, a copy-detection-adjacent paper with no SSCD, no off-the-shelf DINOv2/v3, no CLIP/SigLIP retrieval row, and no alternative pose source is indefensible. The single most likely reviewer question: <em>"you already compute a RANSAC homography — decomposing it gives you rotation and translation for free; why a 1B-parameter model?"</em> You must know the answer empirically before a reviewer asks (§7, rows B8–B11).</li>
+    <li><span class="chip major">Major</span> <b>No new humanities findings.</b> Every humanities result in the materials (Xifengkou/Futuyu misattribution, the crop-into-two split, the Liu Hanxing recaptioning chain) is already published in JOCCH 2024 or the essay. A DH-literate reviewer will notice the 42K-image pipeline has produced no new historical knowledge — undercutting the "AI is essential to the impact" claim. <b>Fix:</b> the PI adjudicates the confirmed-match list and writes up 2–3 <em>new</em> discoveries; one strong new Liu-Hanxing-style figure is worth more than two points of F1.</li>
+    <li><span class="chip major">Major</span> <b>The pose mechanism is asserted, not demonstrated.</b> An aligned exact copy is a picture-of-a-picture — planar, degenerate two-view geometry, out-of-distribution for a 3D reconstruction model. The paper must show the near-zero pose shift on true copies is a measured behavior, not an assumption, and that the "harsh on x/y-translation and rotation, lenient on fov/z" weighting is empirically justified (§6.5). Last year's "depth-aware" claim died the same death: a signal named but never isolated.</li>
+    <li><span class="chip major">Major</span> <b>No ethics / positionality / dual-use section.</b> Occupation-era propaganda from both Japanese and CCP apparatuses; named living-memory individuals; a system whose core function — asserting two images are the same exposure — is exactly the provenance claim that, over-asserted, launders misattribution. The PI's own principle ("the pipeline does not interpret; it retrieves") is the guardrail; write it down as design policy. Two days of writing that converts an existing intellectual asset into rubric points.</li>
+    <li><span class="chip major">Major</span> <b>Framing stays niche.</b> Bridge to the track's established misinformation cluster (COSMOS, SNIFFER, IOHunter lineage): recaptioned image reuse in 1943 is mechanically the same phenomenon as modern out-of-context misuse — the wartime corpus is a fully-labeled natural experiment in institutional image manipulation. Import the non-CS anchors (Yurchak's manifest intertextuality, Chen Li's "Invisible Archives", Arnold &amp; Tilton) into the introduction.</li>
+    <li><span class="chip minor">Minor</span> <b>Hygiene:</b> no seeds anywhere in the <code>.py</code> files; unpinned "VGGT-Omega" checkpoint; breakpoint recorded variously as 50/75/100; no compute specs; internal contradictions in last year's Table 1. Two days total (§11).</li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<section id="strategy">
+  <h2><span class="secno">5</span>Two-Paper Strategy &amp; the Agentic Question</h2>
+
+  <h3>5.1 Is the pipeline without the agentic network enough for AAAI?</h3>
+  <p><b>Main track: yes, cleanly</b> — provided the ablation/baseline program in §6–7 lands. The exact-copy discriminator with a verified-novel pose signal, a rigorous multi-shard protocol, and the NCR-Match benchmark is a coherent, competitive main-track applications/methods paper. Adding an unevaluated VLM layer to it would <em>weaken</em> it: it dilutes the methods story, spends scarce pages, and hands reviewers a fresh soundness objection.</p>
+  <p><b>AISI without the agentic module: possible, but not with the current evidence.</b> The panel's consensus: the pipeline alone, evidenced only by shard-level P/R/F1, is "a main-track paper wearing a DH hat" — the exact profile AISI reviewers are trained to reject. It clears the AISI bar only if the <b>compensating package</b> all lands:</p>
+  <ol>
+    <li>Expert validation with inter-rater agreement + the historian time-saved study (§6.6);</li>
+    <li>The deposited benchmark (NCR-Match pairs + the new exact-vs-same-scene shard labels with trace annotations — arguably the first dataset separating identical exposures from same-scene negatives in cross-domain archival material, a headline AISI contribution by itself);</li>
+    <li>2–3 <em>new</em> humanities findings from the 42K corpus;</li>
+    <li>The ethics section + misinformation-infrastructure framing.</li>
+  </ol>
+
+  <h3>5.2 What the agentic module is actually for</h3>
+  <p>Through the DH lens, the VLM module is close to necessary <em>for the AISI paper specifically</em> — because the methodology essay itself observes that the <b>routine, majority manipulation in these archives is textual</b> ("what changes is the verbal envelope": recaptioning, name erasure, discursive re-placement), and the image-only pipeline is structurally blind to it. The module is the component that reads captions and page context; it converts binary match decisions into the provenance dossiers historians adjudicate from. But three constraints are non-negotiable:</p>
+  <ul>
+    <li><b>It must not interpret.</b> A VLM asserting "censorship" or "erasure" violates the project's published epistemics and creates a provenance-over-assertion liability in exactly the domain where the paper claims ethical care. Reports describe; historians interpret.</li>
+    <li><b>It must not re-derive what geometry already proved.</b> Crop bounds, mirror flag, rotation angle come deterministically from the homography the pipeline already computed — reviewer-proof and free. The VLM contributes caption transcription/translation and neutral page-context description only.</li>
+    <li><b>It must be evaluated or it must not be claimed.</b> The minimal rigorous evaluation is §8. If the expert grading cannot finish by July 28, demote the module to one qualitative case-study figure, explicitly not claimed as a contribution.</li>
+  </ul>
+
+  <h3>5.3 If you can only do one paper</h3>
+  <p>Decision rule: the AISI paper is gated on <em>human time</em> (annotation campaigns + PI grading + partner sign-off on the data release), not GPU time. If by <b>July 10</b> you cannot commit (a) a second annotator, (b) ~2.5 PI-days for grading/adjudication, and (c) written release confirmation from at least CODH, then submit <b>Paper 1 to the main track only</b>, run the expert studies properly over the autumn, and hold the AISI system paper for AAAI-28 — an AISI submission missing those elements would spend a rejection to learn what this report already says.</p>
+
+  <blockquote>"The machine puts the historian in front of the pages where an argument can be made, and the argument is the historian's to make."<span class="who">— the essay's one-line division of labor; use it as the AISI paper's design principle and epigraph</span></blockquote>
+</section>
+
+<!-- ================================================================ -->
+<section id="experiments">
+  <h2><span class="secno">6</span>The Experiments You Still Need</h2>
+  <p class="section-kicker">Ranked by what they defend. GPU estimates assume intermittent Colab A100; the full program is ≈85 A100-hours. Cut order at the end of §9.</p>
+
+  <h3>6.0 Blocking preconditions (Days 1–2 — nothing else starts until these do)</h3>
+  <ol>
+    <li><b>Recover and commit the off-repo scoring heuristic</b> (inlier-ratio definition + pose weights + 2.13 threshold) as <code>pose_scoring.py</code>. Acceptance test: reproduces P/R/F1 91.3 and 94.1 from stored manifests exactly.</li>
+    <li><b>Fix the evaluation statistic</b> in <code>compare_vggt_to_truth.py</code>: one declared definition (P/R over labeled pos+neg only; Unsure reported separately); fix the field-name mismatches and the duplicate-count bug (§11).</li>
+    <li><b>Determinism:</b> seed torch/numpy/DataLoader, <code>cv2.setRNGSeed</code> before every RANSAC/MAGSAC call, stop <code>model.train()</code> from re-enabling BatchNorm updates in frozen backbones, pin the VGGT-Omega commit.</li>
+    <li><b>Rerun <code>aspanfilter.py</code> with <code>--breakpoint-value 0</code></b> on the labeled pairs (&lt;1 GPU-h) so keypoint sidecars exist below the current cutoff — this converts the entire keypoint/inlier/pose axis into CPU post-processing.</li>
+  </ol>
+
+  <h3>6.1 Retrieval baselines (Table A) — "why your fused model?"</h3>
+  <p>Off-the-shelf, frozen, identical preprocessing, Recall@1/5/10/15 on NCR-Match with the 42K working corpus as distractors: <b>SSCD</b> (the canonical copy-detection descriptor), <b>DINOv2 and DINOv3 global features</b>, <b>CLIP or SigLIP-2</b>, the old JOCCH ViT ensemble (existing weights), your DINOv3 fusion, the two VGGT-feature variants (existing weights), plus two isolating rows: DINOv3-alone + SSL head (does the ensemble beat its best member?) and fusion-without-SSL (does the learned head matter?). ≈2–3 Colab days total; all public checkpoints.</p>
+
+  <h3>6.2 Verification ablations (Table B) — the table that carries the novelty claim</h3>
+  <p>Fixed candidate set (the labeled pairs), Shard 1 dev / Shard 2 validation / Shard 3 test, P/R/F1 + PR-AUC + McNemar vs. the full pipeline. Key rows, cheapest first — most are free post-processing over stored manifests once 6.0 is done:</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Row</th><th>Variant</th><th>What it answers</th><th class="num">Cost</th></tr></thead>
+    <tbody>
+      <tr><td class="num">B1</td><td>Keypoint-count filter only (sweep 0–200)</td><td>How much the cheapest stage buys</td><td class="num">free</td></tr>
+      <tr><td class="num">B2</td><td>+ inlier-ratio only (no pose)</td><td>Is the pose stage needed at all?</td><td class="num">free</td></tr>
+      <tr><td class="num">B4</td><td><b>+ weighted VGGT pose @ 2.13 (full)</b></td><td>The headline</td><td class="num">free</td></tr>
+      <tr><td class="num">B5/B6</td><td>Pose components: xy-trans+rot only vs. fov+z only</td><td>Validates the weighting design (fov+z should be near-random)</td><td class="num">free</td></tr>
+      <tr><td class="num">B8</td><td>R,t from <code>decomposeHomographyMat</code> on the already-computed homography</td><td><b>The #1 reviewer question — pose for free, why VGGT?</b></td><td class="num">0.5 d CPU</td></tr>
+      <tr><td class="num">B9</td><td>Essential-matrix pose from ASpanFormer correspondences</td><td>Classical-geometry alternative</td><td class="num">0.5 d CPU</td></tr>
+      <tr><td class="num">B11</td><td>Learned classifier (logistic reg./small MLP over kp count, inlier ratio, 9 pose deltas, global sim) — Doppelgangers-style</td><td>"Why a hand-tuned threshold?" — converts a weakness into "matches a learned model with 4 interpretable parameters"</td><td class="num">0.5 d CPU</td></tr>
+      <tr><td class="num">B10</td><td>MASt3R relative pose, same protocol</td><td>The strongest "why not X" alternative pose head</td><td class="num">≈3 A100-h</td></tr>
+      <tr><td class="num">B12/B13</td><td>Alignment off / raw-vs-filtered alignment keypoints</td><td>Isolates the alignment step</td><td class="num">≈2 A100-h</td></tr>
+      <tr><td class="num">B14</td><td>Matcher swap: LightGlue for ASpanFormer</td><td>Modernity check on the 2022-era matcher</td><td class="num">≈4 A100-h</td></tr>
+      <tr><td class="num">B15</td><td>Matcher swap: RoMa (stretch)</td><td>Cut first if behind schedule</td><td class="num">≈6 A100-h</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>6.3 Sensitivity curves (Table C) — the direct answer to "two point estimates"</h3>
+  <p>All CPU, from cached manifests: (i) inlier-ratio 0.30→0.90 F1 curves per shard with 0.65 marked; (ii) full ROC/PR over the pose score with 2.13 marked; (iii) a 2-D F1 heatmap over (inlier, pose) on Shard 1 with the chosen operating point, replotted on Shard 3 to show the plateau transfers; (iv) retrieval top-K 5→15.</p>
+
+  <h3>6.4 End-to-end recall audit — the honest number</h3>
+  <p>Run the 2,818 verified NCR-Match pairs (and shard known-positives) through every stage at frozen thresholds and report the survival table: % of known-true pairs alive after retrieval top-10 → keypoint filter → inlier filter → pose filter. This converts the selection-biased "recall over survivors" into an application-level answer to <em>"what does the historian miss?"</em> — and per-stage loss attribution tells you where to spend future effort.</p>
+
+  <h3>6.5 Pose-signal validity controls — making "pose-aware" mean something</h3>
+  <ul>
+    <li><b>Synthetic battery:</b> take ~200 labeled exact-copy pairs; apply controlled crops, rotations, halftone simulation, mild perspective warps; show pose scores stay sub-threshold. This documents the degenerate picture-of-a-picture behavior as a measured feature rather than an assumption.</li>
+    <li><b>Per-component distributions:</b> violin/ROC plots of each pose component (x/y-translation, rotation, fov, z) for exact-copy vs. same-scene labeled pairs — the empirical justification for the component weighting, currently asserted from anecdote.</li>
+  </ul>
+
+  <h3>6.6 The human evidence (AISI-critical; start recruiting now)</h3>
+  <ul>
+    <li><b>Annotation reliability study:</b> written 1-page codebook (with the PI's ruling on contact-sheet adjacent frames and same-negative crops — the genuinely contested cases); PI + a second annotator independently relabel the Shard-1/2 pairs (or a stratified 150-pair subset if time-constrained) with Unsure as a first-class category; report kappa and re-score against adjudicated gold labels.</li>
+    <li><b>Trace-type taxonomy:</b> tag the ~577 confirmed positives by manipulation type from the essay's taxonomy — halftone-only, crop, rotation/mirror, retouch, recaption-with-near-identical-pixels — and report per-type pipeline pass rates. This operationalizes "the evidence of the small," and honestly exposes which class (recaption) the image-only pipeline cannot see — which is precisely the argument for the Paper-2 VLM module.</li>
+    <li><b>Historian time-saved study (within-subjects):</b> 4–6 historians/grad students, 20–30 query photos each; condition A = pipeline-verified candidates with alignment visualizations, condition B = plain top-10 retrieval list (or manual browsing); measure time-to-first-verified-republication and verified matches per 30-minute session. Small N is fine — the track rewards real-world rigor, not scale. Fallback if recruiting fails: present the new case-study discoveries as the field evidence and state the user study as registered future work with named partners.</li>
+  </ul>
+
+  <h3>6.7 Cross-domain transfer: Hokushi → Jinchaji (the AISI showpiece)</h3>
+  <p>Freeze <em>everything</em> (thresholds, weights, breakpoint) and run the pipeline on the JOCCH Jinchaji data (2,146 photos + 4,390 crops; 230 annotated pairs; ≈6 A100-h + 1 labeling day). Report Recall@10/15 against the JOCCH paper's 77.8% top-15, and verification P/R/F1 on hand-labeled survivors. What it proves: the identical pipeline and identical thresholds transfer from Japanese occupation propaganda (1939–45) to Communist base-area propaganda (1942–46) — <b>two opposing propaganda systems, different printing technology, different degradation</b>. It is the essay's generalization claim ("Soviet pictorials, colonial photography, Cold War print") made concrete, and almost no copy-detection paper has a cross-dataset result in this domain. Fallback: retrieval-only transfer (zero new labels).</p>
+
+  <h3>6.8 Statistical reporting (applies to every table)</h3>
+  <ul>
+    <li>Bootstrap 95% CIs (10,000 resamples over pairs) on every P/R/F1/PR-AUC cell — cheap, no GPU.</li>
+    <li>McNemar exact test between the full pipeline and each variant on identical pairs (paired decisions are exactly what McNemar is for), Holm-corrected across the table.</li>
+    <li>3 seeds for the final SSL model (mean±std); 1 seed for ablation variants, stated; 5 cv2-seed repeats on Shard 1 to demonstrate geometric-stage variance ≈ 0 after seeding.</li>
+    <li>Disclose the transductive SSL setup (the fusion head trains on the evaluation corpus) and run the one control: retrain excluding Shard-3 images, show Shard-3 F1 unchanged within CI.</li>
+  </ul>
+</section>
+
+<!-- ================================================================ -->
+<section id="ablation">
+  <h2><span class="secno">7</span>The Rigorous Ablation Protocol, Condensed</h2>
+  <p>The answer to "怎么做比较严谨" in five rules:</p>
+  <ol>
+    <li><b>Declare the split roles in the paper.</b> Shard 1 = development (all thresholds and the weighting design were chosen here — say so). Shard 2 = held-out validation (looked at once; never tune on it again). Shard 3 = test, labeled this sprint under the codebook, <b>evaluated exactly once, in the final week, with everything frozen</b>. Do not promise 6-shard statistics — only three shards will ever be labeled; report per-shard columns with CIs instead.</li>
+    <li><b>One factor at a time, from cached artifacts.</b> The pipeline is staged and manifest-cached by design — exploit it. Every threshold-level ablation (keypoint breakpoint, inlier ratio, pose score, component weights) is CPU post-processing over <code>aspan_all_manifest.jsonl</code> and <code>vggt_judged_manifest.jsonl</code>; only backbone swaps and matcher swaps need GPU reruns.</li>
+    <li><b>Every claimed mechanism gets an isolating row.</b> "Depth-aware" died in 2025 because it was never isolated. "Pose-aware" survives only with: pose-off (B2), pose-from-homography (B8), pose-components split (B5/B6), learned-combination (B11), and the validity controls (§6.5).</li>
+    <li><b>Paired statistics, not point estimates.</b> Bootstrap CIs on cells; McNemar between variants; sensitivity curves around every hand-set threshold. A reviewer should be able to see that 0.65 and 2.13 sit on plateaus.</li>
+    <li><b>The honest denominators.</b> Verification metrics are conditional on the candidate set — name them so. End-to-end recall comes only from the §6.4 survival audit. "Unsure" is reported, never silently dropped.</li>
+  </ol>
+</section>
+
+<!-- ================================================================ -->
+<section id="vlm">
+  <h2><span class="secno">8</span>The VLM Module, Done Credibly (Paper 2 Only)</h2>
+
+  <h3>8.1 Output contract</h3>
+  <p>Strict JSON schema per pair — never free text:</p>
+  <ul>
+    <li><code>verdict</code>: exact-copy / same-scene-different-shot / uncertain — <b>taken from the CV pipeline</b>, not re-decided by the VLM;</li>
+    <li><code>geometric_edits</code>: crop bounds, mirror flag, rotation angle, scale — <b>computed deterministically from the homography</b>, passed in as evidence;</li>
+    <li><code>editorial_traces</code>: retouch / overlay / recaption — each {present, evidence-pointer};</li>
+    <li><code>caption</code>: transcription + translation of the printed caption (kyūjitai-aware);</li>
+    <li><code>page_context</code>: 2–3 neutral sentences on layout and the "discursive neighborhood";</li>
+    <li><code>provenance_fields</code>: publication, issue, date, page as read from the page image;</li>
+    <li><b>Zero intent language.</b> No "censored", no "erased", no "propaganda aims". Interpretation is the historian's.</li>
+  </ul>
+  <p>Temperature 0; pinned model version string ("Gemini 3.1 Pro, preview, accessed July 2026"); 3 repeat calls on a 20-pair subsample to report output stability; one open-weights VLM (Qwen3-VL) run on the same schema for reproducibility.</p>
+
+  <h3>8.2 Evaluation (the part that makes it publishable)</h3>
+  <ul>
+    <li><b>Sample:</b> N = 100 stratified pairs — 40 true exact-copies (including heavy crops/halftone), 30 same-scene negatives, 15 pipeline errors, 15 Unsure.</li>
+    <li><b>The one ablation that matters:</b> condition (i) VLM sees source photo + magazine page only; condition (ii) VLM additionally receives the CV evidence (inlier ratio, pose deltas, aligned overlay). Hypothesis: grounding reduces verdict errors and hallucinated traces. 200 reports total.</li>
+    <li><b>Expert grading protocol:</b> PI grades blind to condition, randomized order — verdict correctness; each claimed trace ∈ {correct, incorrect, unsupported}; hallucination rate (unsupported factual claims per report); caption-transcription character accuracy on a 50-pair subset; and the <b>interpretive-overreach rate</b> — assertions of intent per report, target ≈ 0. The intern double-grades a 25-pair overlap for Cohen's kappa. Budget: ~4 min/report × 200 ≈ 13 h ≈ 2.5 PI-days.</li>
+    <li><b>Comparison:</b> VLM-alone vs. CV-pipeline-alone vs. CV+VLM verdict accuracy on the same pairs (McNemar) — plus the qualitative capability the pipeline lacks: recaption/context traces.</li>
+    <li><b>Fallback:</b> if PI time collapses, N=60 single-condition + a 20-pair grounding ablation; below that, demote to a qualitative figure and claim nothing.</li>
+  </ul>
+
+  <div class="callout">
+    <p class="t">Why the interpretive-overreach metric is worth having</p>
+    <p>It operationalizes the project's own published principle — <em>"the pipeline does not interpret; it retrieves"</em> — as a measurable property of an AI system. That is a quotable methodological contribution in itself, it is the direct answer to the AISI ethics expectation, and it differentiates the module from the FakeShield/ForenAgent wave of explainable-forensics work, which has no equivalent restraint metric.</p>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="timeline">
+  <h2><span class="secno">9</span>The 20-Day Plan</h2>
+
+  <div class="gantt" role="img" aria-label="Gantt chart of the sprint from July 6 to July 31, 2026, with five workstreams and deadline milestones on July 21, 28 and 31.">
+    <div class="gantt-inner">
+      <div class="g-grid">
+        <div class="g-head" style="grid-column:1; text-align:left;">July →</div>
+        <div class="g-head">6</div><div class="g-head">7</div><div class="g-head">8</div><div class="g-head">9</div><div class="g-head">10</div><div class="g-head">11</div><div class="g-head">12</div><div class="g-head">13</div><div class="g-head">14</div><div class="g-head">15</div><div class="g-head">16</div><div class="g-head">17</div><div class="g-head">18</div><div class="g-head">19</div><div class="g-head">20</div><div class="g-head">21</div><div class="g-head">22</div><div class="g-head">23</div><div class="g-head">24</div><div class="g-head">25</div><div class="g-head">26</div><div class="g-head">27</div><div class="g-head">28</div><div class="g-head">29</div><div class="g-head">30</div><div class="g-head">31</div>
+
+        <div class="g-label">Engineering &amp; repro</div>
+        <div class="g-row-bg">
+          <div class="bar" style="background:var(--s1); left:0%; width:11.5%;"><span class="bl">heuristic</span></div>
+          <div class="bar" style="background:var(--s1); left:11.5%; width:7.7%;"><span class="bl">stats</span></div>
+          <div class="bar" style="background:var(--s1); left:69.2%; width:30.8%;"><span class="bl">suppl.: code + data package</span></div>
+        </div>
+
+        <div class="g-label">GPU experiments</div>
+        <div class="g-row-bg">
+          <div class="bar" style="background:var(--s2); left:7.7%; width:15.4%;"><span class="bl">Shard-3 · baselines</span></div>
+          <div class="bar" style="background:var(--s2); left:23.1%; width:11.5%;"><span class="bl">ablations B</span></div>
+          <div class="bar" style="background:var(--s2); left:34.6%; width:11.5%;"><span class="bl">Jinchaji</span></div>
+          <div class="bar lbl-out" style="background:var(--s2); left:61.5%; width:3.9%;"><span class="bl">Shard-3 final eval</span></div>
+        </div>
+
+        <div class="g-label">Labeling &amp; expert studies</div>
+        <div class="g-row-bg">
+          <div class="bar" style="background:var(--s3); left:11.5%; width:15.4%;"><span class="bl">codebook · relabel</span></div>
+          <div class="bar" style="background:var(--s3); left:26.9%; width:11.5%;"><span class="bl">taxonomy</span></div>
+          <div class="bar" style="background:var(--s3); left:38.5%; width:23.1%;"><span class="bl">expert validation · time-saved</span></div>
+        </div>
+
+        <div class="g-label">VLM module (Paper 2)</div>
+        <div class="g-row-bg">
+          <div class="bar" style="background:var(--s4); left:38.5%; width:11.5%;"><span class="bl">schema · gen</span></div>
+          <div class="bar" style="background:var(--s4); left:50%; width:15.4%;"><span class="bl">PI grading (blind)</span></div>
+        </div>
+
+        <div class="g-label">Writing &amp; submission</div>
+        <div class="g-row-bg">
+          <div class="bar" style="background:var(--s5); left:30.8%; width:26.9%;"><span class="bl">abstracts · intro · related</span></div>
+          <div class="bar" style="background:var(--s5); left:57.7%; width:27%;"><span class="bl">full drafts · figures · ethics</span></div>
+        </div>
+
+        <div class="g-milestones">
+          <div class="ms" style="left:59.6%;">Jul 21<br>abstracts</div>
+          <div class="ms" style="left:86.5%;">Jul 28<br>papers</div>
+          <div class="ms" style="left:98%;">Jul 31<br>suppl.</div>
+        </div>
+      </div>
+      <div class="g-legend">
+        <span><span class="sw" style="background:var(--s1);"></span>Engineering &amp; repro</span>
+        <span><span class="sw" style="background:var(--s2);"></span>GPU experiments</span>
+        <span><span class="sw" style="background:var(--s3);"></span>Labeling &amp; expert studies</span>
+        <span><span class="sw" style="background:var(--s4);"></span>VLM module</span>
+        <span><span class="sw" style="background:var(--s5);"></span>Writing &amp; submission</span>
+      </div>
+      <div class="gantt-note">Total compute ≈ 85 A100-hours across the sprint — feasible on intermittent Colab only if the Shard-3 ASpanFormer job (~13 h) launches by July 8 and long jobs run overnight. The human bottleneck is labeling + grading: two campaigns and the VLM grading compete for the same PI.</div>
+    </div>
+  </div>
+
+  <details>
+    <summary>Day-by-day table (text version of the chart)</summary>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Days</th><th>Work</th><th class="num">GPU-h</th></tr></thead>
+      <tbody>
+        <tr><td class="num">Jul 6–8</td><td>Preconditions §6.0: commit heuristic, fix eval statistic, seeds, breakpoint-0 rerun; reproduce logged numbers from committed code</td><td class="num">1</td></tr>
+        <tr><td class="num">Jul 8–10</td><td>Launch Shard-3 retrieval + ASpanFormer (background, ~13 h); grid-runner + bootstrap/McNemar scripts</td><td class="num">13</td></tr>
+        <tr><td class="num">Jul 9–11</td><td>Retrieval baselines (SSCD, DINOv2/v3, CLIP/SigLIP); Table C curves from cached manifests</td><td class="num">8</td></tr>
+        <tr><td class="num">Jul 9–12</td><td>Codebook; dual relabel of Shards 1–2; label Shard-3 survivors (intern labels, PI adjudicates)</td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 11–14</td><td>Verification ablations B0–B11 (mostly CPU); MASt3R run; pose-validity controls</td><td class="num">5</td></tr>
+        <tr><td class="num">Jul 13–15</td><td>DINOv3-alone train; fusion-without-SSL; transductive control retrain</td><td class="num">20</td></tr>
+        <tr><td class="num">Jul 15–17</td><td>Jinchaji cross-domain run + survivor labeling; alignment/matcher ablations</td><td class="num">12</td></tr>
+        <tr><td class="num">Jul 16–18</td><td>3-seed retrain of final model; RoMa swap if on schedule</td><td class="num">25</td></tr>
+        <tr><td class="num">Jul 16–19</td><td>VLM module: schema, prompts, 200 report generations (API only)</td><td class="num">0</td></tr>
+        <tr><td class="num">Jul 14–21</td><td>Write both papers; <b>Jul 21: register both abstracts</b></td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 19–22</td><td>PI grades VLM reports blind; kappa subsample; expert time-saved sessions</td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 22</td><td><b>Shard-3 one-shot frozen evaluation → final tables</b></td><td class="num">1</td></tr>
+        <tr><td class="num">Jul 22–27</td><td>Full drafts, figures, stats tables, ethics sections, limitations; internal review; checklist verified against what the supplementary actually contains</td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 28</td><td><b>Submit both papers</b></td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 29–31</td><td>Supplementary: cleaned repo (README, environment file, seeds, pinned deps, <code>pose_scoring.py</code>), NCR-Match + labeled-pair annotation release with datasheet — <b>deposited, not promised</b></td><td class="num">—</td></tr>
+      </tbody>
+    </table></div>
+  </details>
+
+  <h3>Cut order if the schedule slips</h3>
+  <ol>
+    <li>RoMa matcher swap (B15);</li>
+    <li>3-seed retrain → single seed, disclosed;</li>
+    <li>VLM condition (i) → N=60, grounded condition only;</li>
+    <li>Jinchaji verification labeling → retrieval-only transfer;</li>
+    <li>Transductive control → disclosed limitation.</li>
+  </ol>
+  <p><b>Never cut:</b> the committed heuristic (§6.0), Shard-3 test labeling, rows B2/B8/B11, sensitivity curves, bootstrap CIs, and the supplementary code+data package — these are, item for item, the failures named in the AAAI-26 rejection's own reproducibility checklist.</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="citations">
+  <h2><span class="secno">10</span>Citation &amp; Positioning Checklist</h2>
+  <p class="section-kicker">What must be cited (and in four cases, empirically compared) for the paper to survive a 2026 reviewer pool.</p>
+  <div class="twocol">
+    <div class="panel">
+      <h4>Copy detection &amp; retrieval</h4>
+      <ul>
+        <li>SSCD (CVPR 2022) — <b>compare</b></li>
+        <li>DISC21 + ISC21 results; Yokoo descriptor-track winner</li>
+        <li>NDEC (same-scene hard negatives — your exact problem, named)</li>
+        <li>AnyPattern (IJCV 2025); DINOv2/v3 — <b>compare</b>; CLIP/SigLIP — <b>compare</b></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>Matching &amp; pose</h4>
+      <ul>
+        <li>SuperGlue/LightGlue; LoFTR; ASpanFormer</li>
+        <li>RoMa (+v2); DUSt3R; MASt3R — <b>compare (pose)</b>; Reloc3r; VGGT (pin exact checkpoint)</li>
+        <li>Homography decomposition (Malis &amp; Vargas / OpenCV) — <b>compare, it's free</b></li>
+        <li><b>Doppelgangers &amp; Doppelgangers++</b> — cite prominently, distinguish polarity (§3.2)</li>
+        <li>Computational Re-Photography (TOG 2010); Chum et al. 2007 (IND/NIND taxonomy)</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>Cultural heritage CV</h4>
+      <ul>
+        <li><b>EyCon halftone similarity paper</b> (Multimedia Tools &amp; Applications 2025) — the closest DH-CV competitor; one explicit positioning paragraph required</li>
+        <li>Newspaper Navigator (2020) — the YOLO-crop lineage</li>
+        <li>Already cited and fine: EyCon dataset, Dutta chapbooks, Smits ILN, Lang</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>VLM forensics &amp; misinformation (Paper 2)</h4>
+      <ul>
+        <li>FakeShield (ICLR 2025); ForgeryGPT; SNIFFER (CVPR 2024 — out-of-context reuse, thematically closest); LEMMA; MMFakeBench; ForenAgent (2025)</li>
+        <li>COSMOS (AAAI-23 AISI) — the track's own precedent for image-reuse forensics</li>
+        <li>Non-CS anchors: Yurchak (manifest intertextuality), Chen Li ("Invisible Archives"), Arnold &amp; Tilton (distant viewing), Boudana et al. (iconic-photo republication)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="repo">
+  <h2><span class="secno">11</span>Repository Red Flags (file:line)</h2>
+  <p class="section-kicker">From the full code audit. The first three are the ones that block the paper; the rest are pre-release cleanups.</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>#</th><th>Finding</th><th>Where</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><b>Committed judge ≠ published judge.</b> Repo rule is cosine ≥ 0.90 AND unweighted-L1 pose ≤ 0.10 — contradicts the logged weighted heuristic (and the log's own "lenient on fov/z" rationale). Inlier-ratio filter absent from repo entirely.</td><td><code>vggt_judge.py:532-533</code>, <code>aspanfilter.py</code></td><td>Commit <code>pose_scoring.py</code> (§6.0)</td></tr>
+      <tr><td class="num">2</td><td><b>Eval script computes a different precision than the log:</b> counts <code>needs_review</code>/unlabeled as FPs; field-name mismatches silently drop audit columns; duplicate-count bug in label breakdown.</td><td><code>compare_vggt_to_truth.py:41-50, 517, 534-553</code></td><td>One declared statistic; fix field names</td></tr>
+      <tr><td class="num">3</td><td><b>No seeds anywhere in .py files;</b> OpenCV RANSAC/MAGSAC nondeterministic run-to-run; DataLoader shuffles unseeded.</td><td>repo-wide; <code>DataLoader.py:24</code></td><td>Seed everything; <code>cv2.setRNGSeed</code></td></tr>
+      <tr><td class="num">4</td><td>Train/inference preprocessing mismatch: training never grayscales, inference does.</td><td><code>DataLoader.py:41-48</code> vs <code>match_new.py:43-50</code></td><td>Disclose, or fix in final retrain (row A11)</td></tr>
+      <tr><td class="num">5</td><td>"Frozen" backbones aren't: <code>model.train()</code> re-enables BatchNorm running-stat updates in frozen encoders.</td><td><code>train.py:22</code></td><td>Force backbones <code>.eval()</code> in the loop</td></tr>
+      <tr><td class="num">6</td><td>SSL trains transductively on the entire evaluation corpus (source ∪ target).</td><td><code>DataLoader.py:18-21</code></td><td>Disclose + §6.8 control</td></tr>
+      <tr><td class="num">7</td><td>Keypoint breakpoint recorded as 50, 75, and 100 in different places.</td><td><code>run.ipynb</code> cells 6/25; log 20/5</td><td>State the actual value per experiment</td></tr>
+      <tr><td class="num">8</td><td><code>ModelComboVGGTCombinedNoGrad</code> actually <em>enables</em> gradients — inverted naming will confuse reviewers.</td><td><code>ModelComboVGGTCombinedNoGrad.py:35</code></td><td>Rename before release</td></tr>
+      <tr><td class="num">9</td><td>requirements.txt is 5 lines; missing OpenCV, ASpanFormer deps, VGGT/vggt-omega (installed from unpinned GitHub HEAD), DINOv3 hub. README opens with "NOTE: README is OUTDATED"; invalid conda command.</td><td><code>requirements.txt</code>, <code>README.md:1,10</code></td><td>Environment file + rewritten README for the supplementary</td></tr>
+      <tr><td class="num">10</td><td>YOLOv11 crop stage (weights, annotations, training) exists nowhere in the repo; VGGT checkpoints saved into every epoch file via the <code>save_weights</code> key filter; 2.8 MB of committed notebook outputs and <code>__pycache__</code>.</td><td>external; <code>train.py:86-88</code></td><td>Commit YOLO artifacts or declare out of scope honestly; clean history for release</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="questions">
+  <h2><span class="secno">12</span>Open Questions for You</h2>
+  <p class="section-kicker">Answers to these change the plan's details (not its shape). Send them over whenever.</p>
+  <ol>
+    <li><b>Do you have the AAAI-26 review texts?</b> This report reverse-engineered the rejection from the submission's own weaknesses; the actual reviews would let us confirm and target specific objections (and AAAI-27 has no resubmission-disclosure requirement, so this is purely for our benefit).</li>
+    <li><b>Is the off-repo "Experiment notebook" recoverable</b> — specifically the pose-component weights behind the 2.13 score and the exact inlier-ratio definition? If lost, we re-derive on Shard 1 by July 8 (§6.0), but recovery is cheaper and provenance-cleaner.</li>
+    <li><b>Rights:</b> can CODH / Harvard-Yenching / the Jinchaji Institute confirm in writing, before July 31, that (a) an annotation-only release keyed to public archive identifiers is acceptable, and (b) ideally, pair crops for a subset? Who is the fastest contact at each?</li>
+    <li><b>People:</b> who is the second (ideally third) annotator for the codebook relabeling, and can you name 4–6 historians/grad students for the time-saved study? Can you personally commit ~2.5 days (Jul 19–22) to blind-grade the VLM reports?</li>
+    <li><b>One paper or two?</b> The plan assumes both (per the onboarding goal). If the human-evidence gate in §5.3 fails by July 10, we fall back to main-track-only — decide then, not later.</li>
+    <li><b>Confirming the corpus identity:</b> the 42,773-image working set is the North China Railway / Hokushi material (i.e., NCR-Match's parent corpus), correct? The paper's dataset section needs its exact provenance and the relationship to the 2,818 verified pairs stated precisely.</li>
+    <li><b>Compute:</b> is anything beyond intermittent Colab A100 available (NUS SoC cluster via Prof. Prabhu?)? The 85 GPU-hour plan fits Colab, but a reserved GPU removes the biggest schedule risk (the 13-hour Shard-3 job).</li>
+    <li><b>Repo visibility:</b> is <code>JordanLow/ImageSimilarity</code> public? If so, keep this strategy document and the unpublished results off the default branch until after submission — double-blind reviewers finding shard results attached to named accounts is an anonymity risk.</li>
+  </ol>
+
+  <hr>
+  <p class="footnote">Sources used: the AAAI-26 rejected submission (10 pp.), the 2026 experiments log, the JOCCH 2024 paper, the internship onboarding document, the <code>ImageSimilarity</code> repository (full code audit), the Digital Orientalist essay (May 29, 2026), the official AAAI-27 CFP/AISI/submission/policy pages, AISI proceedings 2023–26, and an adversarial novelty search over arXiv/Semantic Scholar (July 6, 2026). Reviewer-panel findings were generated by three independent adversarial reviews against these materials and cross-checked; deadline, novelty, and model-availability claims were separately verified.</p>
+</section>
+
+</div>
