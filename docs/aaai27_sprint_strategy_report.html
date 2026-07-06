@@ -194,6 +194,17 @@
   .ms::before { content: "◆"; display: block; color: var(--fatal); font-size: 11px; }
   .gantt-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 
+  /* ---------- revision highlights (changes since Rev. 2) ---------- */
+  .rev-block {
+    border-left: 3px solid var(--minor); background: color-mix(in srgb, var(--minor) 8%, transparent);
+    padding: 12px 18px; border-radius: 6px; margin: 16px 0;
+  }
+  .callout.rev-edge, .tblwrap.rev-edge, .panel.rev-edge, .gantt.rev-edge, details.rev-edge {
+    border-left: 3px solid var(--minor);
+    background: color-mix(in srgb, var(--minor) 5%, var(--surface));
+  }
+  .chip.updated { background: var(--minor-bg); color: var(--minor-ink); border: 1px solid color-mix(in srgb, var(--minor) 45%, transparent); }
+
   /* ---------- misc ---------- */
   details { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; margin: 12px 0; }
   summary { cursor: pointer; font-weight: 600; font-size: 14.5px; }
@@ -221,7 +232,7 @@
       <span><b>Paper deadline:</b> July 28 (22 days)</span>
       <span><b>Supplementary:</b> July 31</span>
       <span><b>Venue:</b> AAAI-27, Montréal, Feb 16–23 2027</span>
-      <span><b>Rev. 2:</b> incorporates the official AAAI-26 reviews (§3.3)</span>
+      <span><b>Rev. 4:</b> single-paper decision, plain-language pass, Colab workload budget, licensing verified — <b>all changes since Rev. 2 are marked in amber</b></span>
     </div>
   </div>
 </header>
@@ -239,29 +250,36 @@
       <div class="a">Fix evaluation hygiene and add the human evidence — before any new model work.</div>
       <div class="d">The binding constraints are not model quality. They are: threshold leakage (Shard 1 was tuned <em>and</em> reported), a scoring heuristic that exists only in an off-repo notebook, recall measured on a selection-biased denominator, zero expert validation, and a dataset promised last year but never released. All five are fixable in this window. §4, §6–7.</div>
     </div>
-    <div class="card">
-      <div class="q">Q2 · Enough without the agentic module?</div>
-      <div class="a">Yes for the main track. For AISI: yes, but only with the compensating package.</div>
-      <div class="d">The AISI rubric scores stakeholder evaluation, data release, and real-world evidence — not extra layers of AI. An <em>unevaluated</em> Gemini module would hurt you; expert validation + dataset release + new humanities findings + an ethics section can fully replace it. §5, §8.</div>
+    <div class="card rev-edge">
+      <div class="q">Q2 · Enough without the agentic module? <span class="chip updated">Updated</span></div>
+      <div class="a">Yes. Decision made: one paper, AISI track, no agentic module this cycle.</div>
+      <div class="d">The AISI rubric scores stakeholder evaluation, data release, and real-world evidence — not extra layers of AI. The Gemini module is dropped from this submission (kept as a future-work spec in §8); what replaces it: expert validation + dataset release + new humanities findings + an ethics section. §5.</div>
     </div>
     <div class="card">
       <div class="q">Q3 · How to run rigorous ablations?</div>
       <div class="a">Freeze Shard 1 as dev, label Shard 3 as untouched test, ablate from cached manifests.</div>
-      <div class="d">Declare Shard 1 the development set; report Shards 2–3 with frozen thresholds, bootstrap CIs, and McNemar tests. Most ablation rows are CPU post-processing over manifests you already have — the full grid costs ≈85 A100-hours. §6–7.</div>
+      <div class="d">Declare Shard 1 the development set; report Shards 2–3 with frozen thresholds, bootstrap CIs, and McNemar tests. Most ablation rows are CPU post-processing over manifests you already have — the GPU total is ≈65–85 A100-equivalent hours, budgeted in §6.9. §6–7.</div>
     </div>
   </div>
 
-  <div class="callout">
-    <p class="t">Revision note — the actual AAAI-26 reviews are now in hand</p>
-    <p>This report was first written by reconstructing the rejection from the submission's own weaknesses. The official OpenReview record (Submission #879, decision Nov 4, 2025: Reject; ratings 4 / 3 / 1 / 1) has since been provided and <b>confirms the diagnosis point for point</b> — see the review-by-review crosswalk in §3.3. Three things changed as a result: (a) last year's submission was <b>already an AISI-track submission</b>, which proves AISI applies full methods rigor; (b) <b>RoMa is upgraded from optional to must-run</b> — a reviewer named it explicitly as likely better than ASpanFormer; (c) the verified-pair count is <b>2,636</b> (refined from 2,818 during the rebuttal by removing ~182 same-scene-not-exact pairs — a fact that is itself the best possible motivation for this year's core contribution).</p>
+  <div class="callout rev-edge">
+    <p class="t">Rev. 4 — what changed since the version you read, and how to spot it</p>
+    <p><b>Anything marked with an amber left edge or an <span class="chip updated">Updated</span> chip is new or changed since Rev. 2</b> (the version that incorporated the official AAAI-26 reviews). The substantive changes:</p>
+    <ul>
+      <li><b>Final decision recorded: one paper, submitted to AISI.</b> The two-paper split and the Gemini agentic module are dropped for this cycle (§5, §8).</li>
+      <li><b>The AAAI-26 rebuttal-era experiments cannot be reused</b> — different pipeline, and the code, test set, and result files are not recoverable. Every baseline and ablation is now planned from scratch, with a concrete workload and Colab Pro+ budget (§6.9).</li>
+      <li><b>Licensing verified:</b> the North China Railway Archive images and metadata are published under CC BY 4.0 (free reuse with attribution), which removes the biggest release blocker (§4-F5).</li>
+      <li><b>Plain-language explainers added</b> where the previous draft was too dense: what "reproducible from the repo" concretely requires (§4-F2), why the cheap-pose comparison is unavoidable (§6.2), what already exists vs. what must be built for cached-manifest ablations (§6.0), and exactly how to report a multi-stage funnel without misleading anyone (§7.6).</li>
+      <li>The rejected AAAI-26 submission will <b>not be cited or mentioned</b> in the new paper; the published JOCCH 2024 paper <b>will</b> be cited in third person (§3.3).</li>
+    </ul>
+    <p class="footnote">Reading guide: engineering-facing sections are §4 (what must be fixed), §6 (experiments and workload), §7 (evaluation protocol), §9 (timeline), §11 (repo fixes, file:line). PI-facing sections are §2, §3, §5, §6.6 (annotation and expert studies), §12 (open decisions).</p>
   </div>
 
-  <div class="callout act">
-    <p class="t">Core recommendation — split into two submissions</p>
-    <p>Your onboarding goal is already <em>two</em> AAAI-27 submissions, and AAAI-27 explicitly forbids transferring papers between the main track and AISI. Use that:</p>
-    <p><b>Paper 1 (Main Track):</b> the CV pipeline — the exact-copy vs. same-scene problem, the VGGT camera-pose forensic signal (novelty verified, see §3), full baselines and ablations, the NCR-Match benchmark.<br>
-    <b>Paper 2 (AISI):</b> the Digital Historical Forensics <em>system</em> — DHF framing, the constrained VLM per-pair report module with expert grading, the cross-propaganda-system transfer result (Hokushi → Jinchaji), the dataset release, ethics and deployment path.</p>
-    <p>The VLM module is <b>harmful inside Paper 1</b> (dilutes a methods story, adds an unreviewable dependency) and <b>load-bearing for Paper 2</b> (it is the thing that reads the "verbal envelope" the image pipeline cannot see). If capacity forces a single submission, the decision rule is in §5.3.</p>
+  <div class="callout act rev-edge">
+    <p class="t">Core recommendation — one paper, AISI track <span class="chip updated">Updated</span></p>
+    <p>Decision (team, July 6): a <b>single submission to the AISI track</b>. The paper is the Digital Historical Forensics system: the exact-copy vs. same-scene problem, the VGGT camera-pose forensic signal (novelty verified, §3.2) defended by the full baseline/ablation program (§6–7), the cross-propaganda-system transfer result (Hokushi → Jinchaji), the released dataset with expert-adjudicated labels, the historian evidence (§6.6), and an ethics section.</p>
+    <p>The Gemini/VLM report module is <b>out of this paper</b>: it would need its own expert-graded evaluation to survive review, and that evaluation competes for the same PI time the core paper needs. It survives as one future-work sentence; the full spec is preserved in §8 for the next cycle.</p>
+    <p>The main track remains only as a fallback: if the human-evidence gate (§5.3) fails by July 10, the same experiments minus the expert studies make a coherent main-track methods paper. One important lesson from the official reviews stands either way: <b>AISI applied full CV-methods rigor last year and will again</b> — the baseline/ablation program is non-negotiable in both scenarios.</p>
   </div>
 
   <nav class="toc" aria-label="Contents">
@@ -269,10 +287,10 @@
     <a href="#facts"><span class="n">2</span>Ground truth: deadlines, rubric, policies</a>
     <a href="#standing"><span class="n">3</span>Where you actually stand</a>
     <a href="#fatal"><span class="n">4</span>The five fatal issues (and the majors)</a>
-    <a href="#strategy"><span class="n">5</span>Two-paper strategy & the agentic question</a>
+    <a href="#strategy"><span class="n">5</span>The decision: one paper, AISI</a>
     <a href="#experiments"><span class="n">6</span>The experiments you still need</a>
     <a href="#ablation"><span class="n">7</span>The rigorous ablation protocol</a>
-    <a href="#vlm"><span class="n">8</span>The VLM module, done credibly</a>
+    <a href="#vlm"><span class="n">8</span>The VLM module — deferred (spec kept)</a>
     <a href="#timeline"><span class="n">9</span>The 20-day plan</a>
     <a href="#citations"><span class="n">10</span>Citation & positioning checklist</a>
     <a href="#repo"><span class="n">11</span>Repository red flags (file:line)</a>
@@ -387,10 +405,10 @@
     </tbody>
   </table></div>
 
-  <div class="callout act">
-    <p class="t">The gift hidden in the rebuttal: 2,818 → 2,636</p>
-    <p>Under reviewer pressure, the team re-verified the dataset and removed ~182 pairs that "were photographed in the same scene but were not exact matches" — i.e., <b>the same-scene contamination problem is documented in your own records</b>. Team decision: the new paper will <b>not cite or mention the rejected submission</b> — correct, it is unpublished and AAAI-27 has no resubmission-disclosure requirement. Present the number instead as the outcome of your own dataset-construction QC, with no reference to any prior submission: <em>"a two-round verification protocol; ~7% of first-round candidate pairs were identified as same-scene-different-negative in the second round and excluded."</em> That reads as rigor, motivates the discriminator, and reveals no history. Use 2,636 as the verified count; the 182 removed pairs remain usable internally as free labeled hard negatives. (Do not over-correct: the <b>published</b> JOCCH 2024 paper must still be cited, in third person — a reviewer explicitly complained about anonymized self-references.)</p>
-    <p><b>Reusable rebuttal assets</b> (locate them now — they cut the sprint's workload): the stratified 1,000-pair test set; the DINOv2 and Du-et-al.-baseline runs; the aggressive-augmentation study (t7); the Sha Fei 340-pair external validation. Several Table-A rows may already be half-done.</p>
+  <div class="callout act rev-edge">
+    <p class="t">The useful fact hidden in last year's record: 2,818 → 2,636 <span class="chip updated">Updated</span></p>
+    <p>During last year's process, the team re-verified the dataset and removed ~182 pairs that "were photographed in the same scene but were not exact matches" — i.e., <b>the same-scene contamination problem is documented in your own records</b>. Team decision: the new paper will <b>not cite or mention the rejected submission</b> — correct, it is unpublished and AAAI-27 has no resubmission-disclosure requirement. Present the number instead as the outcome of your own dataset-construction quality control, with no reference to any prior submission: <em>"a two-round verification protocol; ~7% of first-round candidate pairs were identified as same-scene-different-negative in the second round and excluded."</em> That reads as rigor, motivates the discriminator, and reveals no history. Use 2,636 as the verified count; the 182 removed pairs remain usable internally as free labeled hard negatives. (Do not over-correct: the <b>published</b> JOCCH 2024 paper must still be cited, in third person — a reviewer explicitly complained about anonymized self-references.)</p>
+    <p><b>Rebuttal-era experiments: confirmed not reusable.</b> Last year's pipeline is entirely different from this year's, and the rebuttal-period code, the stratified 1,000-pair test set, and the result files are not recoverable. Nothing from that period enters this plan. Every baseline and ablation is budgeted from scratch in §6.9 — the honest cost of this is roughly 65–85 A100-equivalent GPU hours plus 2–3 days of scripting, which fits a Colab Pro+ subscription with a small top-up.</p>
   </div>
 </section>
 
@@ -406,18 +424,38 @@
   <h3><span class="chip fatal">Fatal</span> F2 — The published numbers are irreproducible from the repo</h3>
   <p>The code audit's headline finding: the committed judge in <code>vggt_judge.py:532-533</code> implements a <em>different classifier</em> (global-similarity ≥ 0.90 AND unweighted-L1 pose shift ≤ 0.10) than the one that produced the logged results (inlier-ratio 0.65 + weighted 9-dim pose heuristic at 2.13). The inlier-ratio filter does not exist anywhere in the repo; the pose weights are undocumented and live only in an off-repo "Experiment notebook." <b>The public repository literally cannot reproduce the paper.</b><br>
   <b>Fix (blocking, this week):</b> commit the notebook heuristic as <code>pose_scoring.py</code> with the weights as named constants; acceptance test = reproducing F1 91.3 / 94.1 bit-for-bit from the stored manifests. If the notebook is lost, re-derive on Shard 1 only (it is the dev set anyway) and freeze by July 8.</p>
+  <div class="rev-block">
+    <p><b>In plain terms — why "I'll publish the current repo" does not close this issue.</b> "Reproducible" means: a stranger clones the repository, runs the commands in the README on the released data, and gets the numbers printed in the paper. Publishing the repository <em>as it stands today</em> fails that test, because the decision rule that produced the paper's numbers is not in it — the code on GitHub would compute <em>different</em> numbers. Making the repo public changes who can see the gap; it does not close it. The concrete to-do list, in order:</p>
+    <ol>
+      <li>Find the notebook that contains the real scoring rule (the 0.65 inlier-ratio definition + the 9 pose-component weights + the 2.13 threshold).</li>
+      <li>Copy that rule into the repository as a normal script (<code>pose_scoring.py</code>), with every constant written out and named.</li>
+      <li>Run it on the already-saved result files and check it reproduces F1 91.3 (Shard 1) and 94.1 (Shard 2) exactly. If it does not, stop and find out why before anything else.</li>
+      <li>Only then: update the README so the full command sequence (train → match → filter → judge → score) is written down, pin the model versions, and add seeds.</li>
+    </ol>
+  </div>
 
   <h3><span class="chip fatal">Fatal</span> F3 — Recall is measured on a selection-biased denominator</h3>
   <p>Labels exist only for pairs that already survived top-10 retrieval and the keypoint-count filter, so "R 96.3 / 98.4" is recall <em>over pipeline survivors</em> — the historian's real question ("what do I miss?") is unanswered, and retrieval-stage misses are invisible. The eval script compounds this: it counts <code>needs_review</code>/unlabeled pairs as false positives, so its precision is a different statistic from the hand-review precision, and nobody can currently say which produced 86.7/90.2.<br>
-  <b>Fix:</b> (a) name the metric "verification P/R conditional on the candidate set" in the paper; (b) run the <b>end-to-end recall audit</b> — push the 2,636 verified NCR-Match pairs (the rebuttal's refined set) through every stage and report a per-stage survival table (§6.4); (c) reconcile the eval script with the hand-review protocol and report "Unsure" as a first-class outcome.</p>
+  <b>Fix:</b> (a) name the metric "verification P/R conditional on the candidate set" in the paper; (b) run the <b>end-to-end recall audit</b> — push the 2,636 verified NCR-Match pairs through every stage and report a per-stage survival table (§6.4); (c) reconcile the eval script with the hand-review protocol and report "Unsure" as a first-class outcome.</p>
+  <div class="rev-block">
+    <p><b>Note:</b> reporting stage-conditional metrics is <em>not wrong in itself</em> — a staged funnel is a legitimate design, and it is fine that the verification numbers are computed on the funnel's candidates. What is wrong is presenting them without saying so. §7.6 gives the exact reporting recipe: which metric belongs to which stage, the denominator for each, the survival table, and example sentences to use in the paper.</p>
+  </div>
 
   <h3><span class="chip fatal">Fatal</span> F4 — No expert validation, no measured impact</h3>
   <p>The ~1,279 labeled pairs were hand-reviewed by a single unnamed annotator with no codebook, no inter-annotator agreement, and "Unsure" silently excluded — while the methodology essay publicly claims the system collapses "months of manual comparison." For AISI, this is the difference between an application paper and a CV paper wearing a social-impact hat.<br>
   <b>Fix:</b> the two cheap studies in §6.6 — a multi-annotator relabeling with Cohen's/Fleiss' kappa under a written codebook, and a small within-subjects historian time-saved study. Start recruiting <em>this week</em> from the existing JOCCH annotation network.</p>
 
-  <h3><span class="chip fatal">Fatal</span> F5 — Dataset and code release: promises are now worthless</h3>
-  <p>See §2.2. NCR-Match remains unreleased a year after being promised; AAAI-27 reviewers are instructed to disregard promises.<br>
-  <b>Fix:</b> deposit, don't promise. An <em>annotation-only</em> release avoids the image-rights problem entirely: pair IDs keyed to CODH's public North China Railway identifiers, match labels, trace annotations, the codebook, and a Gebru-style datasheet (provenance, labeling protocol, the archive's own Japanese-military selection bias, handling guidance for propaganda imagery). Email CODH / Harvard-Yenching / the Jinchaji Institute for written confirmation now.</p>
+  <h3><span class="chip fatal">Fatal</span> F5 — Dataset and code release: promises are now worthless <span class="chip updated">Updated</span></h3>
+  <p>See §2.2. NCR-Match remains unreleased a year after being promised; AAAI-27 reviewers are instructed to disregard promises. <b>Fix: deposit, don't promise</b> — the package goes in with the July 31 supplementary.</p>
+  <div class="rev-block">
+    <p><b>Licensing status — verified July 6, and it is good news.</b> The North China Railway Archive publishes its photographs and metadata under <b>Creative Commons Attribution 4.0 (CC BY 4.0)</b>: the images may be freely shared and adapted as long as credit is given to the archive (source: the archive's own About page at CODH, <code>codh.rois.ac.jp/north-china-railway/about/</code>; independently confirmed by press coverage of the archive's launch). Consequences:</p>
+    <ul>
+      <li><b>The NCR-Match release is not blocked by rights.</b> The dataset (image identifiers, pair labels, crops if desired, trace annotations, codebook) can be deposited with attribution to the archive. No permission email is needed for the NCR side.</li>
+      <li><b>What reviewer R2 actually asked for is a paragraph, not a permission.</b> The complaint was that licensing "is not clarified" <em>in the paper</em>. The fix is to state it: one licensing paragraph naming CC BY 4.0 for NCR materials, plus the datasheet.</li>
+      <li><b>Sha Fei / Harvard-Yenching (the Jinchaji side):</b> permission was previously granted for the PI's dissertation research. Since this paper is a different publication, the safe-and-cheap move is a short written confirmation that the existing permission covers this use — and regardless, the cross-domain experiment (§6.7) can release <em>annotations and identifiers only</em>, no images, which needs no new permission.</li>
+      <li>The ethics section (§4, majors) is still needed — contextualization of propaganda imagery is a separate question from licensing — but the licensing half of the objection is now closed.</li>
+    </ul>
+  </div>
 
   <h3>The majors</h3>
   <ul>
@@ -432,32 +470,39 @@
 
 <!-- ================================================================ -->
 <section id="strategy">
-  <h2><span class="secno">5</span>Two-Paper Strategy &amp; the Agentic Question</h2>
+  <h2><span class="secno">5</span>The Decision: One Paper, AISI <span class="chip updated">Updated</span></h2>
 
   <h3>5.1 Is the pipeline without the agentic network enough for AAAI?</h3>
   <div class="callout">
     <p class="t">A lesson the AAAI-26 reviews make unavoidable</p>
     <p>Last year's rejection <b>was an AISI rejection</b> — and two of its four reviewers still wrote uncompromising CV-methods reviews. The track's tolerance for limited novelty did not save a paper whose Quality-of-Evaluation scores were Poor. Conclusion: whichever track you choose, the baseline/ablation program in §6–7 is non-negotiable; the AISI-specific additions (expert studies, release, findings, ethics) come <em>on top of</em> methods rigor, not instead of it. The encouraging flip side: significance scores were fine, and the two dimensions that sank the paper — evaluation quality and path-to-practice — are precisely the two this plan targets, with no new model required.</p>
   </div>
-  <p><b>Main track: yes, cleanly</b> — provided the ablation/baseline program in §6–7 lands. The exact-copy discriminator with a verified-novel pose signal, a rigorous multi-shard protocol, and the NCR-Match benchmark is a coherent, competitive main-track applications/methods paper. Adding an unevaluated VLM layer to it would <em>weaken</em> it: it dilutes the methods story, spends scarce pages, and hands reviewers a fresh soundness objection.</p>
-  <p><b>AISI without the agentic module: possible, but not with the current evidence.</b> The panel's consensus: the pipeline alone, evidenced only by shard-level P/R/F1, is "a main-track paper wearing a DH hat" — the exact profile AISI reviewers are trained to reject. It clears the AISI bar only if the <b>compensating package</b> all lands:</p>
-  <ol>
-    <li>Expert validation with inter-rater agreement + the historian time-saved study (§6.6);</li>
-    <li>The deposited benchmark (NCR-Match pairs + the new exact-vs-same-scene shard labels with trace annotations — arguably the first dataset separating identical exposures from same-scene negatives in cross-domain archival material, a headline AISI contribution by itself);</li>
-    <li>2–3 <em>new</em> humanities findings from the 42K corpus;</li>
-    <li>The ethics section + misinformation-infrastructure framing.</li>
-  </ol>
+  <div class="rev-block">
+    <p><b>Yes — and that is now the plan of record.</b> The team decided (July 6) to submit <b>one paper to the AISI track, without the agentic module</b>. The panel's earlier warning still defines the conditions: the pipeline alone, evidenced only by shard-level precision/recall, would read as "a main-track paper wearing a DH hat" — the profile AISI reviewers are trained to reject. The single paper clears the AISI bar only if all four compensating elements land:</p>
+    <ol>
+      <li><b>Expert validation with inter-rater agreement</b> + the historian time-saved study (§6.6);</li>
+      <li><b>The deposited benchmark</b> (NCR-Match pairs + the new exact-vs-same-scene shard labels with trace annotations — arguably the first dataset separating identical exposures from same-scene negatives in cross-domain archival material, a headline AISI contribution by itself; licensing now confirmed workable, §4-F5);</li>
+      <li><b>2–3 <em>new</em> humanities findings</b> from the 42K corpus;</li>
+      <li><b>The ethics section</b> + misinformation-infrastructure framing.</li>
+    </ol>
+    <p>How the paper should present its evidence (this validates the team's instinct): <b>lead with the new stage.</b> The retrieval/representation-learning stage is established technology — it appears as a system component with off-the-shelf baselines (Table A) and is otherwise not claimed as a contribution. The paper's core evidence is the <b>verification stage</b> — the exact-copy vs. same-scene discriminator — evaluated on the fixed, expert-adjudicated candidate sets (Table B), where the novelty actually lives (§3.2). Decoupling the two stages this way is standard practice and is exactly what §7.6's reporting recipe implements.</p>
+  </div>
 
-  <h3>5.2 What the agentic module is actually for</h3>
-  <p>Through the DH lens, the VLM module is close to necessary <em>for the AISI paper specifically</em> — because the methodology essay itself observes that the <b>routine, majority manipulation in these archives is textual</b> ("what changes is the verbal envelope": recaptioning, name erasure, discursive re-placement), and the image-only pipeline is structurally blind to it. The module is the component that reads captions and page context; it converts binary match decisions into the provenance dossiers historians adjudicate from. But three constraints are non-negotiable:</p>
-  <ul>
-    <li><b>It must not interpret.</b> A VLM asserting "censorship" or "erasure" violates the project's published epistemics and creates a provenance-over-assertion liability in exactly the domain where the paper claims ethical care. Reports describe; historians interpret.</li>
-    <li><b>It must not re-derive what geometry already proved.</b> Crop bounds, mirror flag, rotation angle come deterministically from the homography the pipeline already computed — reviewer-proof and free. The VLM contributes caption transcription/translation and neutral page-context description only.</li>
-    <li><b>It must be evaluated or it must not be claimed.</b> The minimal rigorous evaluation is §8. If the expert grading cannot finish by July 28, demote the module to one qualitative case-study figure, explicitly not claimed as a contribution.</li>
-  </ul>
+  <h3>5.2 Why the agentic module is dropped this cycle <span class="chip updated">Updated</span></h3>
+  <div class="rev-block">
+    <p>Three reasons, in order of weight:</p>
+    <ul>
+      <li><b>It cannot be claimed unevaluated,</b> and its minimal credible evaluation (expert grading of ~200 reports, §8) competes for the same PI days that the annotation campaign and the time-saved study need. Those two are AISI-critical; the module is not.</li>
+      <li><b>It repairs none of the fatal issues.</b> The reviews were about evaluation hygiene, baselines, generalization, and release — a report-writing layer on top changes none of that.</li>
+      <li><b>Epistemics:</b> the project's published principle is "the pipeline does not interpret; it retrieves." An interpreting VLM bolted on in three weeks would contradict the paper's own methodology in the most reviewable way possible.</li>
+    </ul>
+    <p>What survives in this paper: one future-work sentence (e.g., "structured per-pair reports grounded in the pipeline's geometric evidence, with expert-graded restraint metrics, are the natural next step"). The full module spec and its evaluation design are preserved in §8 for the next cycle — including the interpretive-overreach metric, which remains a genuinely good idea.</p>
+  </div>
 
-  <h3>5.3 If you can only do one paper</h3>
-  <p>Decision rule: the AISI paper is gated on <em>human time</em> (annotation campaigns + PI grading + partner sign-off on the data release), not GPU time. If by <b>July 10</b> you cannot commit (a) a second annotator, (b) ~2.5 PI-days for grading/adjudication, and (c) written release confirmation from at least CODH, then submit <b>Paper 1 to the main track only</b>, run the expert studies properly over the autumn, and hold the AISI system paper for AAAI-28 — an AISI submission missing those elements would spend a rejection to learn what this report already says.</p>
+  <h3>5.3 The fallback gate (unchanged in substance)</h3>
+  <div class="rev-block">
+    <p>The AISI paper is gated on <em>human time</em> (annotation campaign + expert study), not GPU time. If by <b>July 10</b> the team cannot commit (a) the dual-annotation campaign (§6.6) and (b) ~2–3 PI-days for labeling and adjudication, then submit the same experimental content <b>minus the expert studies to the main track</b> instead, run the expert studies over the autumn, and bring the full AISI system paper to AAAI-28. Note the release-permission condition has dropped out of this gate: NCR licensing is confirmed CC BY 4.0 (§4-F5), so the data release no longer depends on anyone answering an email.</p>
+  </div>
 
   <blockquote>"The machine puts the historian in front of the pages where an argument can be made, and the argument is the historian's to make."<span class="who">— the essay's one-line division of labor; use it as the AISI paper's design principle and epigraph</span></blockquote>
 </section>
@@ -474,11 +519,18 @@
     <li><b>Determinism:</b> seed torch/numpy/DataLoader, <code>cv2.setRNGSeed</code> before every RANSAC/MAGSAC call, stop <code>model.train()</code> from re-enabling BatchNorm updates in frozen backbones, pin the VGGT-Omega commit.</li>
     <li><b>Rerun <code>aspanfilter.py</code> with <code>--breakpoint-value 0</code></b> on the labeled pairs (&lt;1 GPU-h) so keypoint sidecars exist below the current cutoff — this converts the entire keypoint/inlier/pose axis into CPU post-processing.</li>
   </ol>
+  <div class="rev-block">
+    <p><b>"Cached manifests" — what already exists in the repo vs. what still has to be built.</b> The good news: the caching mechanism is <em>already implemented</em> in the current pipeline code. Each stage writes its measurements for every candidate pair to a record file: <code>match_new.py</code> writes <code>retrieval_manifest.jsonl</code> and a reusable <code>feature_cache.npz</code>; <code>aspanfilter.py</code> writes an audit row (raw and filtered keypoint counts) for <em>every</em> attempted pair to <code>aspan_all_manifest.jsonl</code>, plus keypoint files for passing pairs; <code>vggt_judge.py</code> stores the similarity score, the pose-shift total, <em>and the full 9-number pose vectors</em> for every judged pair in <code>vggt_judged_manifest.jsonl</code>. Because the expensive measurements are saved, re-testing a different decision rule ("what if the cutoff were 0.70?", "what if rotation were weighted differently?") means re-reading these files and recomputing pass/fail — minutes on a laptop, no GPU.</p>
+    <p>What does <em>not</em> exist yet and must be written (≈1–2 days of scripting, items 1–3 above plus): the committed scoring rule (<code>pose_scoring.py</code>), a small ablation-runner script that sweeps rules/thresholds over the manifests and emits the tables, and the bootstrap/McNemar statistics script. One physical rerun is also needed (item 4) because keypoint files were only saved for pairs that passed the old cutoff.</p>
+  </div>
 
   <h3>6.1 Retrieval baselines (Table A) — "why your fused model?"</h3>
   <p>Off-the-shelf, frozen, identical preprocessing, Recall@1/5/10/15 <b>plus mAP</b> (explicitly requested by R3) on NCR-Match with the 42K working corpus as distractors: <b>SSCD</b> (the canonical copy-detection descriptor), <b>DINOv2 and DINOv3 global features</b>, <b>CLIP or SigLIP-2</b>, the old JOCCH ViT ensemble (existing weights), your DINOv3 fusion, the two VGGT-feature variants (existing weights), plus two isolating rows: DINOv3-alone + SSL head (does the ensemble beat its best member?) and fusion-without-SSL (does the learned head matter?). ≈2–3 Colab days total; all public checkpoints.</p>
 
   <h3>6.2 Verification ablations (Table B) — the table that carries the novelty claim</h3>
+  <div class="rev-block">
+    <p><b>Why this table is unavoidable, in plain terms.</b> The paper's selling point is: use VGGT (a billion-parameter 3D vision model) to estimate each photo's <em>camera position</em> — where the camera stood and where it pointed — and call a pair "the same photograph" when the two estimated positions coincide. The trap: an earlier pipeline stage already computed the geometric correspondence between the two images (which point in image A maps to which point in image B, used for alignment). A textbook formula — one line of OpenCV, decades old, instant, free — can extract the relative camera rotation and translation <em>from that same correspondence</em>. So the reviewer's inevitable question is: <em>"the information you need may already be in your hands for free — did you check whether the billion-parameter model actually beats the one-line classical method?"</em> Last year's paper died on the same shape of question ("why depth and not edges/segmentation?") because it had no answer. Three possible outcomes of running the comparison, all of which you must know <em>now</em>: (a) VGGT clearly wins → the contribution is proven and the paper is strong; (b) they tie → still publishable, but the story honestly changes to "a simple geometric check suffices"; (c) VGGT loses → better to learn this in July than from the reviews in November. The same logic forces two more rows: MASt3R (another model that infers camera pose — "why VGGT and not MASt3R?") and a simple learned classifier over the already-saved signals ("why a hand-set threshold instead of letting basic machine learning learn the rule?").</p>
+  </div>
   <p>Fixed candidate set (the labeled pairs), Shard 1 dev / Shard 2 validation / Shard 3 test, P/R/F1 + PR-AUC + McNemar vs. the full pipeline. Key rows, cheapest first — most are free post-processing over stored manifests once 6.0 is done:</p>
   <div class="tblwrap"><table>
     <thead><tr><th>Row</th><th>Variant</th><th>What it answers</th><th class="num">Cost</th></tr></thead>
@@ -512,8 +564,8 @@
 
   <h3>6.6 The human evidence (AISI-critical; start recruiting now)</h3>
   <ul>
-    <li><b>Annotation reliability study:</b> written 1-page codebook <em>first</em> (with the PI's ruling on contact-sheet adjacent frames and same-negative crops — the genuinely contested cases); then PI and the intern <b>independently</b> label the same pairs without seeing each other's answers, report Cohen's kappa, and adjudicate disagreements into gold labels, with Unsure as a first-class category. Scope: only the filter-survivor candidate pairs need human eyes — ≈1,279 pairs on Shards 1–2 (re-label) + ≈650 on Shard 3 (new) ≈ 1,950 pairs ≈ 2–3 working days per person. <b>Shards 4–6 are out of scope this cycle</b> — three labeled shards are enough for the paper's statistics.</li>
-    <li><b>Trace-type taxonomy:</b> tag the ~577 confirmed positives by manipulation type from the essay's taxonomy — halftone-only, crop, rotation/mirror, retouch, recaption-with-near-identical-pixels — and report per-type pipeline pass rates. This operationalizes "the evidence of the small," and honestly exposes which class (recaption) the image-only pipeline cannot see — which is precisely the argument for the Paper-2 VLM module.</li>
+    <li class="rev-block" style="list-style-position: inside;"><b>Annotation reliability study <span class="chip updated">Updated</span>:</b> written 1-page codebook <em>first</em> (with the PI's ruling on contact-sheet adjacent frames and same-negative crops — the genuinely contested cases); then PI and the intern <b>independently</b> label the same pairs without seeing each other's answers, report Cohen's kappa, and adjudicate disagreements into gold labels, with Unsure as a first-class category. Scope: only the filter-survivor candidate pairs need human eyes — ≈1,279 pairs on Shards 1–2 (re-label) + ≈650 on Shard 3 (new) ≈ 1,950 pairs ≈ 2–3 working days per person. <b>Shards 4–6 are out of scope this cycle</b> — three labeled shards are enough for the paper's statistics.</li>
+    <li><b>Trace-type taxonomy:</b> tag the ~577 confirmed positives by manipulation type from the essay's taxonomy — halftone-only, crop, rotation/mirror, retouch, recaption-with-near-identical-pixels — and report per-type pipeline pass rates. This operationalizes "the evidence of the small," and honestly exposes which class (recaption) the image-only pipeline cannot see — which is precisely the motivation for the deferred VLM module (§8) and an honest limitation to state in this paper.</li>
     <li><b>Historian time-saved study (within-subjects):</b> 4–6 historians/grad students, 20–30 query photos each; condition A = pipeline-verified candidates with alignment visualizations, condition B = plain top-10 retrieval list (or manual browsing); measure time-to-first-verified-republication and verified matches per 30-minute session. Small N is fine — the track rewards real-world rigor, not scale. Fallback if recruiting fails: present the new case-study discoveries as the field evidence and state the user study as registered future work with named partners.</li>
   </ul>
 
@@ -527,12 +579,35 @@
     <li>3 seeds for the final SSL model (mean±std); 1 seed for ablation variants, stated; 5 cv2-seed repeats on Shard 1 to demonstrate geometric-stage variance ≈ 0 after seeding.</li>
     <li>Disclose the transductive SSL setup (the fusion head trains on the evaluation corpus) and run the one control: retrain excluding Shard-3 images, show Shard-3 F1 unchanged within CI.</li>
   </ul>
+
+  <h3>6.9 Workload and budget: does this fit Colab Pro+? <span class="chip updated">Updated</span></h3>
+  <div class="rev-block">
+    <p><b>Yes, with a small top-up.</b> Since the AAAI-26 rebuttal-era experiments are not reusable (different pipeline; code and results lost), everything below is budgeted from scratch. Reference prices, checked July 2026: Colab Pro+ is $49.99/month and includes 500 compute units plus background execution (jobs keep running up to 24 h with the browser closed); extra units are $9.99 per 100. Consumption is roughly <b>13–15 units/hour on an A100</b>, ~5 on an L4, ~2 on a T4 — so cheap jobs should run on cheap GPUs.</p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>#</th><th>GPU job</th><th>GPU</th><th class="num">Hours</th><th class="num">≈Units</th></tr></thead>
+      <tbody>
+        <tr><td class="num">W1</td><td>Breakpoint-0 ASpanFormer rerun on the ~1,300 labeled Shard-1/2 pairs (§6.0 item 4)</td><td>L4</td><td class="num">1–2</td><td class="num">~10</td></tr>
+        <tr><td class="num">W2</td><td>Shard-3: retrieval + ASpanFormer over ~70K top-10 candidate pairs (the one long job — start by July 8, run overnight with <code>--resume</code>)</td><td>A100</td><td class="num">~13</td><td class="num">~190</td></tr>
+        <tr><td class="num">W3</td><td>VGGT judge on Shard-3 filter survivors (~650 pairs)</td><td>A100</td><td class="num">1</td><td class="num">~15</td></tr>
+        <tr><td class="num">W4</td><td>Retrieval baselines: featurize ~47K images with SSCD, DINOv2, DINOv3, CLIP/SigLIP (Table A rows A1–A4)</td><td>L4/T4</td><td class="num">6–8</td><td class="num">~35</td></tr>
+        <tr><td class="num">W5</td><td>End-to-end recall audit: ASpanFormer + VGGT on the 2,636 known-true pairs (§6.4)</td><td>L4/A100</td><td class="num">3–4</td><td class="num">~35</td></tr>
+        <tr><td class="num">W6</td><td>MASt3R relative pose on ~1,950 labeled pairs (row B10)</td><td>A100</td><td class="num">~3</td><td class="num">~45</td></tr>
+        <tr><td class="num">W7</td><td>Matcher swaps: LightGlue (~4 h) + RoMa (~6 h) on the labeled pairs (rows B14–B15; RoMa is must-run)</td><td>A100</td><td class="num">~10</td><td class="num">~150</td></tr>
+        <tr><td class="num">W8</td><td>Alignment ablations: VGGT reruns with alignment off / raw-vs-filtered keypoints (rows B12–B13)</td><td>A100</td><td class="num">~2</td><td class="num">~30</td></tr>
+        <tr><td class="num">W9</td><td>Representation retrains: DINOv3-alone head (A9), fusion-without-SSL (A10), transductive control (§6.8) — 25–50 epochs each on the 42K corpus</td><td>A100</td><td class="num">~20</td><td class="num">~300</td></tr>
+        <tr><td class="num">W10</td><td>Jinchaji cross-domain: featurize + ASpanFormer ~21K pairs + VGGT on survivors (§6.7)</td><td>A100/L4</td><td class="num">~6</td><td class="num">~80</td></tr>
+        <tr><td class="num">W11</td><td>Pose-validity synthetic battery: VGGT on ~200 exact-copy pairs × ~5 transforms (§6.5)</td><td>A100</td><td class="num">~2</td><td class="num">~30</td></tr>
+        <tr><td class="num">W12</td><td><em>Cuttable:</em> 3-seed retrain of the final model (§6.8)</td><td>A100</td><td class="num">~16</td><td class="num">~240</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Totals:</b> core program W1–W11 ≈ <b>65–70 A100-equivalent hours ≈ 900–950 compute units</b>; with the cuttable W12, ≈ 1,150–1,200 units. Against Pro+'s 500 monthly units, that means roughly <b>$40–70 of pay-as-you-go top-up</b> for the core program (or ~$25 if W2/W4/W5/W10 are pushed onto L4 overnight runs) — affordable; the real constraint is wall-clock, which is why W2 must launch by July 8. Zero-GPU items (laptop-class, from the cached manifests): all threshold sweeps and sensitivity curves (Table C), the pose-component and weighting ablations (B5–B7), homography-decomposition pose (B8), essential-matrix pose (B9), the learned classifier (B11), bootstrap CIs, McNemar tests, the survival-table assembly, and all kappa statistics.</p>
+  </div>
 </section>
 
 <!-- ================================================================ -->
 <section id="ablation">
   <h2><span class="secno">7</span>The Rigorous Ablation Protocol, Condensed</h2>
-  <p>The answer to "怎么做比较严谨" in five rules:</p>
+  <p>How to make the evaluation rigorous, in five rules (7.1–7.5) plus a worked reporting recipe (7.6):</p>
   <ol>
     <li><b>Declare the split roles in the paper.</b> Shard 1 = development (all thresholds and the weighting design were chosen here — say so). Shard 2 = held-out validation (looked at once; never tune on it again). Shard 3 = test, labeled this sprint under the codebook, <b>evaluated exactly once, in the final week, with everything frozen</b>. Do not promise 6-shard statistics — only three shards will ever be labeled; report per-shard columns with CIs instead.</li>
     <li><b>One factor at a time, from cached artifacts.</b> The pipeline is staged and manifest-cached by design — exploit it. Every threshold-level ablation (keypoint breakpoint, inlier ratio, pose score, component weights) is CPU post-processing over <code>aspan_all_manifest.jsonl</code> and <code>vggt_judged_manifest.jsonl</code>; only backbone swaps and matcher swaps need GPU reruns.</li>
@@ -540,11 +615,33 @@
     <li><b>Paired statistics, not point estimates.</b> Bootstrap CIs on cells; McNemar between variants; sensitivity curves around every hand-set threshold. A reviewer should be able to see that 0.65 and 2.13 sit on plateaus.</li>
     <li><b>The honest denominators.</b> Verification metrics are conditional on the candidate set — name them so. End-to-end recall comes only from the §6.4 survival audit. "Unsure" is reported, never silently dropped.</li>
   </ol>
+
+  <h3>7.6 How to report a three-stage funnel without misleading anyone <span class="chip updated">Updated</span></h3>
+  <div class="rev-block">
+    <p><b>The situation.</b> The pipeline is a funnel: stage 1 (retrieval) proposes, for each source photo, its 10 most similar candidates out of the whole corpus; stage 2 (keypoint/geometry filters) discards implausible candidates; stage 3 (the pose judge) makes the final same-photograph decision. The precision/recall numbers in the experiments log were computed <em>relative to what came out of the earlier stages</em> — which is a legitimate thing to measure, as long as the paper says exactly that. The problem is only ever an unstated denominator. Here is the recipe.</p>
+    <p><b>Rule: every number gets a named denominator.</b> Three different questions, three different metrics, never mixed:</p>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Metric (name it exactly like this in the paper)</th><th>Question it answers</th><th>Denominator</th><th>Where it comes from</th></tr></thead>
+      <tbody>
+        <tr><td><b>Retrieval Recall@K</b> (K = 1, 5, 10, 15) + mAP</td><td>"If a true reproduction exists in the corpus, how often does it appear in the top-K candidate list?"</td><td>All verified true pairs (the 2,636)</td><td>Table A, per encoder</td></tr>
+        <tr><td><b>Verification precision / recall / F1, conditional on the candidate set</b></td><td>"Among the candidate pairs the funnel surfaces, how well does the final stage separate exact copies from same-scene look-alikes?"</td><td>The expert-labeled filter-survivor pairs of each shard (~650 per shard)</td><td>Table B — the paper's core table</td></tr>
+        <tr><td><b>End-to-end survival rate</b> (per stage)</td><td>"Of all known true pairs, what fraction is still alive after each stage — i.e., what does the historian ultimately miss, and which stage loses it?"</td><td>All verified true pairs (the 2,636)</td><td>The §6.4 audit — one small table</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The survival table, concretely</b> (illustrative numbers, replace with measured ones): "Of 2,636 verified pairs: 94.1% survive top-10 retrieval; 91.0% survive the keypoint filter; 89.2% survive the inlier-ratio filter; 87.9% are confirmed by the pose judge. End-to-end recall is therefore 87.9%, with retrieval the largest single source of loss." Two sentences, one table — and objection F3 is fully answered.</p>
+    <p><b>Example wording to adapt for the paper:</b> <em>"We report verification metrics conditional on the candidate set: ground-truth labels exist for the N=650 candidate pairs per shard that pass retrieval and the keypoint filter, and precision/recall/F1 are computed over these expert-adjudicated pairs. End-to-end recall over all verified pairs is reported separately as a per-stage survival analysis (Table X)."</em></p>
+    <p><b>Two closing notes.</b> (1) Reporting the verification stage on a fixed candidate set is not a trick — it is the standard way to evaluate a re-ranking/verification component in isolation, and it is what lets Table B compare pose sources fairly without re-running retrieval. (2) The corollary discipline: never quote a Table-B number as if it were end-to-end performance; the survival table is the only end-to-end claim the paper makes.</p>
+  </div>
 </section>
 
 <!-- ================================================================ -->
 <section id="vlm">
-  <h2><span class="secno">8</span>The VLM Module, Done Credibly (Paper 2 Only)</h2>
+  <h2><span class="secno">8</span>The VLM Module — Deferred to the Next Cycle <span class="chip updated">Updated</span></h2>
+  <div class="rev-block">
+    <p><b>Status: dropped from this submission</b> (team decision, July 6 — reasons in §5.2). In the paper it appears as one future-work sentence, nothing more. The full specification and evaluation design below are <b>preserved unchanged for the follow-up paper</b> — when the module is built, this is still exactly how to make it publishable, and the expert-graded trace labels produced by this cycle's annotation campaign (§6.6) will double as its ground truth.</p>
+  </div>
+  <details class="rev-edge">
+  <summary>Full module specification and evaluation design (kept for the future paper)</summary>
 
   <h3>8.1 Output contract</h3>
   <p>Strict JSON schema per pair — never free text:</p>
@@ -572,13 +669,15 @@
     <p class="t">Why the interpretive-overreach metric is worth having</p>
     <p>It operationalizes the project's own published principle — <em>"the pipeline does not interpret; it retrieves"</em> — as a measurable property of an AI system. That is a quotable methodological contribution in itself, it is the direct answer to the AISI ethics expectation, and it differentiates the module from the FakeShield/ForenAgent wave of explainable-forensics work, which has no equivalent restraint metric.</p>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
 <section id="timeline">
-  <h2><span class="secno">9</span>The 20-Day Plan</h2>
+  <h2><span class="secno">9</span>The 20-Day Plan <span class="chip updated">Updated</span></h2>
+  <p class="section-kicker">Re-planned for the single AISI paper: the VLM workstream is removed; its days go to the must-run matcher comparisons and the expert studies.</p>
 
-  <div class="gantt" role="img" aria-label="Gantt chart of the sprint from July 6 to July 31, 2026, with five workstreams and deadline milestones on July 21, 28 and 31.">
+  <div class="gantt rev-edge" role="img" aria-label="Gantt chart of the sprint from July 6 to July 31, 2026, with four workstreams and deadline milestones on July 21, 28 and 31.">
     <div class="gantt-inner">
       <div class="g-grid">
         <div class="g-head" style="grid-column:1; text-align:left;">July →</div>
@@ -596,6 +695,7 @@
           <div class="bar" style="background:var(--s2); left:7.7%; width:15.4%;"><span class="bl">Shard-3 · baselines</span></div>
           <div class="bar" style="background:var(--s2); left:23.1%; width:11.5%;"><span class="bl">ablations B</span></div>
           <div class="bar" style="background:var(--s2); left:34.6%; width:11.5%;"><span class="bl">Jinchaji</span></div>
+          <div class="bar" style="background:var(--s2); left:46.2%; width:11.5%;"><span class="bl">matchers · retrains</span></div>
           <div class="bar lbl-out" style="background:var(--s2); left:61.5%; width:3.9%;"><span class="bl">Shard-3 final eval</span></div>
         </div>
 
@@ -606,21 +706,15 @@
           <div class="bar" style="background:var(--s3); left:38.5%; width:23.1%;"><span class="bl">expert validation · time-saved</span></div>
         </div>
 
-        <div class="g-label">VLM module (Paper 2)</div>
-        <div class="g-row-bg">
-          <div class="bar" style="background:var(--s4); left:38.5%; width:11.5%;"><span class="bl">schema · gen</span></div>
-          <div class="bar" style="background:var(--s4); left:50%; width:15.4%;"><span class="bl">PI grading (blind)</span></div>
-        </div>
-
         <div class="g-label">Writing &amp; submission</div>
         <div class="g-row-bg">
-          <div class="bar" style="background:var(--s5); left:30.8%; width:26.9%;"><span class="bl">abstracts · intro · related</span></div>
-          <div class="bar" style="background:var(--s5); left:57.7%; width:27%;"><span class="bl">full drafts · figures · ethics</span></div>
+          <div class="bar" style="background:var(--s5); left:30.8%; width:26.9%;"><span class="bl">abstract · intro · related</span></div>
+          <div class="bar" style="background:var(--s5); left:57.7%; width:27%;"><span class="bl">full draft · figures · ethics</span></div>
         </div>
 
         <div class="g-milestones">
-          <div class="ms" style="left:59.6%;">Jul 21<br>abstracts</div>
-          <div class="ms" style="left:86.5%;">Jul 28<br>papers</div>
+          <div class="ms" style="left:59.6%;">Jul 21<br>abstract</div>
+          <div class="ms" style="left:86.5%;">Jul 28<br>paper</div>
           <div class="ms" style="left:98%;">Jul 31<br>suppl.</div>
         </div>
       </div>
@@ -628,10 +722,9 @@
         <span><span class="sw" style="background:var(--s1);"></span>Engineering &amp; repro</span>
         <span><span class="sw" style="background:var(--s2);"></span>GPU experiments</span>
         <span><span class="sw" style="background:var(--s3);"></span>Labeling &amp; expert studies</span>
-        <span><span class="sw" style="background:var(--s4);"></span>VLM module</span>
         <span><span class="sw" style="background:var(--s5);"></span>Writing &amp; submission</span>
       </div>
-      <div class="gantt-note">Total compute ≈ 85 A100-hours across the sprint — feasible on intermittent Colab only if the Shard-3 ASpanFormer job (~13 h) launches by July 8 and long jobs run overnight. The human bottleneck is labeling + grading: two campaigns and the VLM grading compete for the same PI.</div>
+      <div class="gantt-note">Total GPU ≈ 65–70 A100-equivalent hours (≈ 900–950 Colab compute units — full budget in §6.9); feasible on Colab Pro+ only if the Shard-3 ASpanFormer job (~13 h) launches by July 8 and long jobs run overnight with resume enabled. The human bottleneck is the two labeling campaigns plus the expert-study sessions, which all draw on the same PI.</div>
     </div>
   </div>
 
@@ -646,23 +739,21 @@
         <tr><td class="num">Jul 9–12</td><td>Codebook; dual relabel of Shards 1–2; label Shard-3 survivors (intern labels, PI adjudicates)</td><td class="num">—</td></tr>
         <tr><td class="num">Jul 11–14</td><td>Verification ablations B0–B11 (mostly CPU); MASt3R run; pose-validity controls</td><td class="num">5</td></tr>
         <tr><td class="num">Jul 13–15</td><td>DINOv3-alone train; fusion-without-SSL; transductive control retrain</td><td class="num">20</td></tr>
-        <tr><td class="num">Jul 15–17</td><td>Jinchaji cross-domain run + survivor labeling; alignment/matcher ablations</td><td class="num">12</td></tr>
-        <tr><td class="num">Jul 16–18</td><td>3-seed retrain of final model; RoMa swap if on schedule</td><td class="num">25</td></tr>
-        <tr><td class="num">Jul 16–19</td><td>VLM module: schema, prompts, 200 report generations (API only)</td><td class="num">0</td></tr>
-        <tr><td class="num">Jul 14–21</td><td>Write both papers; <b>Jul 21: register both abstracts</b></td><td class="num">—</td></tr>
-        <tr><td class="num">Jul 19–22</td><td>PI grades VLM reports blind; kappa subsample; expert time-saved sessions</td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 15–17</td><td>Jinchaji cross-domain run + survivor labeling; alignment ablations (B12–B13)</td><td class="num">12</td></tr>
+        <tr><td class="num">Jul 18–20</td><td>Matcher swaps (LightGlue + RoMa — must-run); 3-seed retrain only if on schedule</td><td class="num">26</td></tr>
+        <tr><td class="num">Jul 14–21</td><td>Write the paper; <b>Jul 21: register the abstract</b></td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 16–21</td><td>Expert validation and time-saved sessions; kappa adjudication with the PI</td><td class="num">—</td></tr>
         <tr><td class="num">Jul 22</td><td><b>Shard-3 one-shot frozen evaluation → final tables</b></td><td class="num">1</td></tr>
-        <tr><td class="num">Jul 22–27</td><td>Full drafts, figures, stats tables, ethics sections, limitations; internal review; checklist verified against what the supplementary actually contains</td><td class="num">—</td></tr>
-        <tr><td class="num">Jul 28</td><td><b>Submit both papers</b></td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 22–27</td><td>Full draft, figures, stats tables, ethics section, limitations; internal review; checklist verified against what the supplementary actually contains</td><td class="num">—</td></tr>
+        <tr><td class="num">Jul 28</td><td><b>Submit the paper</b></td><td class="num">—</td></tr>
         <tr><td class="num">Jul 29–31</td><td>Supplementary: cleaned repo (README, environment file, seeds, pinned deps, <code>pose_scoring.py</code>), NCR-Match + labeled-pair annotation release with datasheet — <b>deposited, not promised</b></td><td class="num">—</td></tr>
       </tbody>
     </table></div>
   </details>
 
-  <h3>Cut order if the schedule slips</h3>
+  <h3>Cut order if the schedule slips <span class="chip updated">Updated</span></h3>
   <ol>
     <li>3-seed retrain → single seed, disclosed;</li>
-    <li>VLM condition (i) → N=60, grounded condition only;</li>
     <li>Jinchaji verification labeling → retrieval-only transfer;</li>
     <li>Transductive control → disclosed limitation.</li>
   </ol>
@@ -702,7 +793,7 @@
       </ul>
     </div>
     <div class="panel">
-      <h4>VLM forensics &amp; misinformation (Paper 2)</h4>
+      <h4>VLM forensics &amp; misinformation <span class="chip updated">now future-paper cites, except COSMOS</span></h4>
       <ul>
         <li>FakeShield (ICLR 2025); ForgeryGPT; SNIFFER (CVPR 2024 — out-of-context reuse, thematically closest); LEMMA; MMFakeBench; ForenAgent (2025)</li>
         <li>COSMOS (AAAI-23 AISI) — the track's own precedent for image-reuse forensics</li>
@@ -738,13 +829,13 @@
   <h2><span class="secno">12</span>Open Questions for You</h2>
   <p class="section-kicker">Answers to these change the plan's details (not its shape). Send them over whenever.</p>
   <ol>
-    <li><b><s>Do you have the AAAI-26 review texts?</s> Resolved</b> — received July 6 and incorporated (§3.3). Follow-up: <b>where do the rebuttal-era artifacts live</b> (the stratified 1,000-pair test set, the DINOv2 / Du-et-al. baseline runs, the augmentation study, the Sha Fei 340-pair validation, and the refined 2,636-pair list with the 182 removed same-scene pairs)? Locating them saves several days of Table-A work and gives the discriminator free labeled hard negatives.</li>
+    <li class="rev-block" style="list-style-position: inside;"><b><s>AAAI-26 reviews / rebuttal artifacts?</s> Both resolved</b> — reviews received July 6 and incorporated (§3.3); rebuttal-era code, test set, and results confirmed <b>not recoverable</b> (and built on a different pipeline), so the plan budgets every baseline from scratch (§6.9). One residual ask: if the <b>refined 2,636-pair list</b> (or the list of the ~182 removed same-scene pairs) survives anywhere — even as a spreadsheet — it is free labeled hard negatives for the discriminator.</li>
     <li><b>Is the off-repo "Experiment notebook" recoverable</b> — specifically the pose-component weights behind the 2.13 score and the exact inlier-ratio definition? If lost, we re-derive on Shard 1 by July 8 (§6.0), but recovery is cheaper and provenance-cleaner.</li>
-    <li><b>Rights:</b> can CODH / Harvard-Yenching / the Jinchaji Institute confirm in writing, before July 31, that (a) an annotation-only release keyed to public archive identifiers is acceptable, and (b) ideally, pair crops for a subset? Who is the fastest contact at each?</li>
-    <li><b>People:</b> who is the second (ideally third) annotator for the codebook relabeling, and can you name 4–6 historians/grad students for the time-saved study? Can you personally commit ~2.5 days (Jul 19–22) to blind-grade the VLM reports?</li>
-    <li><b>One paper or two?</b> The plan assumes both (per the onboarding goal). If the human-evidence gate in §5.3 fails by July 10, we fall back to main-track-only — decide then, not later.</li>
+    <li class="rev-block" style="list-style-position: inside;"><b><s>Rights?</s> Largely resolved</b> — NCR Archive images and metadata are CC BY 4.0 (verified; §4-F5), so the NCR-Match release needs attribution, not permission. Remaining, both optional-but-recommended: a one-line written confirmation from Harvard-Yenching that the dissertation-era Sha Fei permission covers this project's use, and a decision on whether the Jinchaji side releases annotations only (default) or also image crops.</li>
+    <li class="rev-block" style="list-style-position: inside;"><b>People <span class="chip updated">Updated</span>:</b> the annotation plan is now PI + intern dual-independent labeling (§6.6) — please block ~2–3 working days each between July 9–15. Separately: can you name 4–6 historians/grad students for the time-saved study sessions (July 16–21)? (The VLM grading commitment is gone — the module is deferred.)</li>
+    <li class="rev-block" style="list-style-position: inside;"><b><s>One paper or two?</s> Resolved</b> — one paper, AISI track, agentic module deferred (§5). The July 10 gate now only decides AISI vs. main-track fallback.</li>
     <li><b>Confirming the corpus identity:</b> the 42,773-image working set is the North China Railway / Hokushi material (i.e., NCR-Match's parent corpus), correct? The paper's dataset section needs its exact provenance and the relationship to the 2,636 verified pairs stated precisely.</li>
-    <li><b>Compute:</b> is anything beyond intermittent Colab A100 available (NUS SoC cluster via Prof. Prabhu?)? The 85 GPU-hour plan fits Colab, but a reserved GPU removes the biggest schedule risk (the 13-hour Shard-3 job).</li>
+    <li class="rev-block" style="list-style-position: inside;"><b>Compute <span class="chip updated">Updated</span>:</b> budgeted in §6.9 — Colab Pro+ plus roughly $40–70 of pay-as-you-go units covers the core program. A reserved GPU (NUS SoC cluster via Prof. Prabhu?) is no longer necessary but would remove the biggest schedule risk (the 13-hour Shard-3 job under Colab preemption).</li>
     <li><b>Repo visibility:</b> is <code>JordanLow/ImageSimilarity</code> public? If so, keep this strategy document and the unpublished results off the default branch until after submission — double-blind reviewers finding shard results attached to named accounts is an anonymity risk.</li>
   </ol>
 
