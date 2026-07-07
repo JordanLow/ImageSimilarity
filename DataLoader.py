@@ -7,6 +7,8 @@ import torchvision.transforms.functional as tf
 import numpy as np
 from data_aug import *
 
+DATALOADER_SEED = 0
+
 
 class DataLoader:
     def __init__(self, source, target, batch_size, augments):
@@ -21,6 +23,7 @@ class DataLoader:
                      for path, subdirs, imgs in os.walk(target) for img in imgs]
 
         self.augments = augments
+        random.seed(DATALOADER_SEED)
         random.shuffle(self.src)
 
     def __iter__(self):

@@ -2,6 +2,8 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 
+TRAIN_SEED = 0
+
 from DataLoader import DataLoader
 
 from match import *
@@ -19,13 +21,14 @@ def load_model_from_file(model_path, class_name):
     return model_class()
 
 def train(model, optimizer, batch_size, epoch, src_path, trg_path, sv_path, eval, metrics, save_best_weights):
-    model.train()
+    torch.manual_seed(TRAIN_SEED)
 
     log_avg_loss = []
     log_eval_acc = []
-    best_epoch_loss = float('inf') # Initialize best epoch loss to infinity
+    best_epoch_loss = float('inf')
 
     for e in tqdm(range(epoch)):
+        model.train()
         losses = []
         print(f'\nEpoch {e+1}')
         for img, label in DataLoader(src_path, trg_path, batch_size, augments=True):

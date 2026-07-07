@@ -1,11 +1,16 @@
-"""Manifest-first representation retrieval for ImageSimilarity.
+"""Step 1 of 4 — DINO retrieval for the NCR-Match pipeline.
 
-Additive replacement for match.py. It writes two production artifacts:
-- retrieval_manifest.jsonl: one row per top-X source/target candidate.
+Featurizes source and target image collections with the DINO model and writes:
+- retrieval_manifest.jsonl: one row per top-X source/target candidate pair.
 - feature_cache.npz: source/target feature matrices plus same-order paths.
 
 The feature cache stores embeddings, not the full cosine matrix. Rankings can be
 regenerated from cached features without rerunning the representation model.
+
+Use --topx / --topk to control how many candidates are retained per source image
+(default 15; sweep 5→30 for retrieval Recall@K ablations).
+
+Next step: geometry_filter.py (ASpanFormer geometric verification, Step 2).
 """
 
 from __future__ import annotations
@@ -206,7 +211,7 @@ def resolve_device(device_arg: str) -> torch.device:
     return device
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate top-X manifest and feature cache.")
     parser.add_argument("--weights", type=str, default="weights_2-11_199.pt")
     parser.add_argument("--model-definition", type=str, default="ModelCombo.py")
@@ -222,11 +227,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--chunk-size", type=int, default=256)
     parser.add_argument("--feature-dtype", choices=["float32", "float16"], default="float32")
     parser.add_argument("--device", type=str, default="auto")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv=None) -> None:
+    args = parse_args(argv)
     output_dir = Path(args.output_dir)
     manifest_path = output_dir / args.manifest_name
     cache_path = Path(args.features_cache) if args.features_cache else output_dir / args.feature_cache_name

@@ -1,10 +1,24 @@
-"""Manifest-first ASpanFormer filtering for ImageSimilarity.
+"""Step 2 of 4 — ASpanFormer geometric verification for the NCR-Match pipeline.
 
-Additive replacement for process_images.py. It consumes retrieval_manifest.jsonl
-from match_new.py and writes:
-- aspan_all_manifest.jsonl: audit row for every attempted candidate pair.
-- vggt_candidates_manifest.jsonl: passed pairs only.
+Consumes retrieval_manifest.jsonl from retrieve.py (Step 1) and writes:
+- aspan_all_manifest.jsonl: audit row for every attempted candidate pair,
+  including pairs that fail the keypoint-count gate (Filter 1). This file
+  supports post-hoc keypoint-threshold sweeps (Table B, row B1) without
+  re-running ASpanFormer.
+- vggt_candidates_manifest.jsonl: pairs passing Filter 1 only (raw keypoint
+  count >= --breakpoint-value). Consumed by vggt_signals.py (Step 3).
 - NPZ sidecars for passed pairs containing keypoint/alignment data for VGGT.
+
+Filter 1 (keypoint count gate) is a COMPUTE gate, not a match decision. It
+prevents running the expensive VGGT inference on pairs with very few keypoints.
+The final match decision is made by pose_scoring.py (Step 4) using the signals
+recorded here (aspan_2d_inlier_ratio) and in vggt_signals.py.
+
+RANSAC seeding: cv2.setRNGSeed(RANSAC_SEED) is called before each
+findFundamentalMat call to ensure bit-for-bit reproducible results across runs.
+
+Previous step: retrieve.py (Step 1).
+Next step:     vggt_signals.py (Step 3).
 """
 
 from __future__ import annotations
@@ -21,6 +35,8 @@ from typing import Any, Iterable
 import cv2
 import numpy as np
 import torch
+
+RANSAC_SEED = 0  # cv2.setRNGSeed is called before each RANSAC call for determinism
 
 
 def norm_path(path: str | Path) -> str:
@@ -45,7 +61,7 @@ def append_jsonl(path: Path, row: dict[str, Any]) -> None:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def load_processed_ids(path: Path) -> set[str]:
+def load_processed_ids(path: Path, skip_errors: bool = False) -> set[str]:
     processed: set[str] = set()
     if not path.exists():
         return processed
@@ -58,8 +74,11 @@ def load_processed_ids(path: Path) -> set[str]:
             except json.JSONDecodeError:
                 continue
             candidate_id = row.get("candidate_id")
-            if candidate_id:
-                processed.add(str(candidate_id))
+            if not candidate_id:
+                continue
+            if skip_errors and row.get("exception"):
+                continue  # excluded so the pair is retried
+            processed.add(str(candidate_id))
     return processed
 
 
@@ -146,6 +165,7 @@ def run_aspan_pair(
 
     if raw_count >= 8:
         try:
+            cv2.setRNGSeed(RANSAC_SEED)
             fundamental, mask_raw = cv2.findFundamentalMat(
                 raw0, raw1, method=cv2.FM_RANSAC, ransacReprojThreshold=1
             )
@@ -236,7 +256,7 @@ def process(args: argparse.Namespace) -> None:
     passed_manifest = output_dir / args.passed_manifest_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    processed_ids = load_processed_ids(all_manifest) if args.resume else set()
+    processed_ids = load_processed_ids(all_manifest, skip_errors=args.retry_errors) if args.resume else set()
     passed_ids = load_processed_ids(passed_manifest) if args.resume else set()
     if not args.resume:
         all_manifest.write_text("", encoding="utf-8")
@@ -297,10 +317,12 @@ def process(args: argparse.Namespace) -> None:
         except Exception as exc:  # keep batch runs alive; record pair-level failures
             failed += 1
             runtime = time.perf_counter() - start
+            print(f"  [FAIL] {candidate_id}: {type(exc).__name__}: {exc}")
             error_row = dict(base)
             error_row.update(
                 {
                     "aspan_pass": False,
+                    "exception": True,
                     "breakpoint_value": int(args.breakpoint_value),
                     "raw_keypoint_count": 0,
                     "filtered_keypoint_count": 0,
@@ -319,7 +341,7 @@ def process(args: argparse.Namespace) -> None:
     print(f"Sidecars: {sidecar_dir}")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Filter retrieval manifest pairs with ASpanFormer.")
     parser.add_argument("--input-manifest", required=True, help="retrieval_manifest.jsonl from match_new.py")
     parser.add_argument("--output-dir", required=True)
@@ -333,13 +355,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--passed-manifest-name", default="vggt_candidates_manifest.jsonl")
     parser.add_argument("--sidecar-dir", default="aspan_sidecars")
     parser.add_argument("--resume", action="store_true", help="Skip candidate_ids already present in all manifest")
+    parser.add_argument("--retry-errors", action="store_true", help="With --resume, re-process pairs that previously raised an exception (exception=True rows)")
     parser.add_argument("--max-pairs", type=int, default=None, help="Optional debug cap")
     parser.add_argument("--progress-every", type=int, default=50)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> None:
-    process(parse_args())
+def main(argv=None) -> None:
+    process(parse_args(argv))
 
 
 if __name__ == "__main__":
