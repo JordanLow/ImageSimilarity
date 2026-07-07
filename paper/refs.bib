@@ -1,0 +1,772 @@
+% =============================================================================
+% Merged, deduplicated bibliography for the AAAI-27 AISI submission.
+% One key per work; keys match main.tex. Compile with aaai2027.bst.
+% Key merges performed during assembly:
+%   du2024jocch                    -> du2024probing
+%   du2025information/jcc/circulation -> du2025metaphor
+%   du2026dhf/du2026orientalist    -> du2026evidence
+%   dias2013phylogeny/phylogenyforests -> dias2013forests
+%   chum2007nearidentical          -> chum2007scalable
+%   douze2021disc21                -> douze2021disc
+%   jindaapiraksa2013californiand  -> jindaapiraksa2013california
+%   lee2020newspapernavigator      -> lee2020newspaper
+%   maggio2026vggtslam2            -> maggio2026vggtslam
+%   arnold2019distantviewing       -> arnold2019distant
+% =============================================================================
+
+% ---------- Project / domain-history references ----------
+
+@article{du2024probing,
+  author  = {Du, Lin and Le, Brandon and Honig, Edouardo},
+  title   = {Probing Historical Image Contexts: Enhancing Visual Archive Retrieval through Computer Vision},
+  journal = {ACM Journal on Computing and Cultural Heritage},
+  volume  = {16},
+  number  = {4},
+  pages   = {84:1--84:17},
+  year    = {2024},
+  doi     = {10.1145/3631129}
+}
+
+@article{du2025metaphor,
+  author  = {Du, Lin},
+  title   = {From Information to Metaphor: Tracking Photographic Editing in {Chinese} Wartime Magazines through {Digital Historical Forensics}},
+  journal = {Journal of Chinese Cinemas},
+  volume  = {18},
+  number  = {2--3},
+  pages   = {329--374},
+  year    = {2025},
+  doi     = {10.1080/17508061.2025.2514410}
+}
+
+@misc{du2026evidence,
+  author       = {Du, Lin},
+  title        = {The Evidence of the Small: Digital Historical Forensics and What Big Data Cannot See in Wartime {Chinese} Propaganda},
+  howpublished = {The Digital Orientalist},
+  year         = {2026},
+  note         = {Published May 29, 2026. \url{https://digitalorientalist.com/2026/05/29/the-evidence-of-the-small-digital-historical-forensics-and-what-big-data-cannot-see-in-wartime-chinese-propaganda/}}
+}
+
+@book{kushner2006thought,
+  author    = {Kushner, Barak},
+  title     = {The Thought War: Japanese Imperial Propaganda},
+  publisher = {University of Hawai'i Press},
+  address   = {Honolulu},
+  year      = {2006}
+}
+
+@book{earhart2008certain,
+  author    = {Earhart, David C.},
+  title     = {Certain Victory: Images of World War {II} in the Japanese Media},
+  publisher = {M.E. Sharpe},
+  address   = {Armonk, NY},
+  year      = {2008}
+}
+
+@book{yurchak2005everything,
+  author    = {Yurchak, Alexei},
+  title     = {Everything Was Forever, Until It Was No More: The Last Soviet Generation},
+  publisher = {Princeton University Press},
+  address   = {Princeton, NJ},
+  year      = {2005}
+}
+
+@article{arnold2019distant,
+  author  = {Arnold, Taylor and Tilton, Lauren},
+  title   = {Distant Viewing: Analyzing Large Visual Corpora},
+  journal = {Digital Scholarship in the Humanities},
+  volume  = {34},
+  number  = {Supplement 1},
+  pages   = {i3--i16},
+  year    = {2019},
+  doi     = {10.1093/llc/fqz013}
+}
+
+% Launch year 2019 verified against the CODH site (news entry 2019-02-12).
+@misc{ncrarchive2019,
+  author       = {{Center for Open Data in the Humanities (CODH), ROIS}},
+  title        = {North China Railway Archive},
+  year         = {2019},
+  howpublished = {\url{https://codh.rois.ac.jp/north-china-railway/}},
+  note         = {Digitized photograph collection, ca.\ 39,000 items, 1939--1945. Images and metadata licensed CC BY 4.0.}
+}
+
+% ---------- Image phylogeny / near-duplicate taxonomy ----------
+
+@article{dias2012phylogeny,
+  author  = {Dias, Zanoni and Rocha, Anderson and Goldenstein, Siome},
+  title   = {Image Phylogeny by Minimal Spanning Trees},
+  journal = {IEEE Transactions on Information Forensics and Security},
+  volume  = {7},
+  number  = {2},
+  pages   = {774--788},
+  year    = {2012},
+  doi     = {10.1109/TIFS.2011.2169959}
+}
+
+% DOI ...05.002 verified against Crossref (title and pages 178-189 match);
+% ...05.015 is an unrelated article in the same issue.
+@article{dias2013forests,
+  author  = {Dias, Zanoni and Goldenstein, Siome and Rocha, Anderson},
+  title   = {Toward Image Phylogeny Forests: Automatically Recovering Semantically Similar Image Relationships},
+  journal = {Forensic Science International},
+  volume  = {231},
+  number  = {1--3},
+  pages   = {178--189},
+  year    = {2013},
+  doi     = {10.1016/j.forsciint.2013.05.002}
+}
+
+@inproceedings{chum2007scalable,
+  author    = {Chum, Ond{\v r}ej and Philbin, James and Isard, Michael and Zisserman, Andrew},
+  title     = {Scalable Near Identical Image and Shot Detection},
+  booktitle = {Proceedings of the 6th ACM International Conference on Image and Video Retrieval (CIVR)},
+  pages     = {549--556},
+  year      = {2007},
+  doi       = {10.1145/1282280.1282359}
+}
+
+@inproceedings{jindaapiraksa2013california,
+  author    = {Jinda-Apiraksa, Amornched and Vonikakis, Vassilios and Winkler, Stefan},
+  title     = {California-{ND}: An Annotated Dataset for Near-Duplicate Detection in Personal Photo Collections},
+  booktitle = {Proceedings of the 5th International Workshop on Quality of Multimedia Experience (QoMEX)},
+  pages     = {142--147},
+  year      = {2013},
+  doi       = {10.1109/QoMEX.2013.6603227}
+}
+
+@article{moreira2018provenance,
+  author  = {Moreira, Daniel and Bharati, Aparna and Brogan, Joel and Pinto, Allan and Parowski, Michael and Bowyer, Kevin W. and Flynn, Patrick J. and Rocha, Anderson and Scheirer, Walter J.},
+  title   = {Image Provenance Analysis at Scale},
+  journal = {IEEE Transactions on Image Processing},
+  volume  = {27},
+  number  = {12},
+  pages   = {6109--6123},
+  year    = {2018},
+  doi     = {10.1109/TIP.2018.2865674}
+}
+
+@inproceedings{guan2019mfc,
+  author    = {Guan, Haiying and Kozak, Mark and Robertson, Eric and Lee, Yooyoung and Yates, Amy N. and Delgado, Andrew and Zhou, Daniel and Kheyrkhah, Timothee and Smith, Jeff and Fiscus, Jonathan},
+  title     = {{MFC} Datasets: Large-Scale Benchmark Datasets for Media Forensic Challenge Evaluation},
+  booktitle = {Proceedings of the IEEE Winter Applications of Computer Vision Workshops (WACVW)},
+  pages     = {63--72},
+  year      = {2019},
+  doi       = {10.1109/WACVW.2019.00018}
+}
+
+@article{zhang2024provenancevit,
+  author  = {Zhang, Keyang and Kong, Chenqi and Wang, Shiqi and Rocha, Anderson and Li, Haoliang},
+  title   = {Image Provenance Analysis via Graph Encoding with Vision Transformer},
+  journal = {arXiv preprint arXiv:2408.14170},
+  year    = {2024},
+  doi     = {10.48550/arXiv.2408.14170}
+}
+
+@article{lai2025provenance,
+  author  = {Lai, Jiewei and Zhang, Lan and Tang, Chen and Sun, Pengcheng},
+  title   = {Efficient and Accurate Image Provenance Analysis: A Scalable Pipeline for Large-Scale Images},
+  journal = {arXiv preprint arXiv:2506.23707},
+  year    = {2025},
+  doi     = {10.48550/arXiv.2506.23707}
+}
+
+% ---------- Copy detection ----------
+
+@inproceedings{douze2009copydays,
+  author    = {Douze, Matthijs and J{\'e}gou, Herv{\'e} and Sandhawalia, Harsimrat and Amsaleg, Laurent and Schmid, Cordelia},
+  title     = {Evaluation of {GIST} Descriptors for Web-Scale Image Search},
+  booktitle = {Proceedings of the ACM International Conference on Image and Video Retrieval (CIVR)},
+  pages     = {1--8},
+  year      = {2009},
+  doi       = {10.1145/1646396.1646421}
+}
+
+@article{douze2021disc,
+  author  = {Douze, Matthijs and Tolias, Giorgos and Pizzi, Ed and Papakipos, Zo{\"e} and Chanussot, Lowik and Radenovic, Filip and Jenicek, Tomas and Maximov, Maxim and Leal-Taix{\'e}, Laura and Elezi, Ismail and Chum, Ond{\v r}ej and Canton Ferrer, Cristian},
+  title   = {The 2021 Image Similarity Dataset and Challenge},
+  journal = {arXiv preprint arXiv:2106.09672},
+  year    = {2021},
+  doi     = {10.48550/arXiv.2106.09672}
+}
+
+@inproceedings{pizzi2022sscd,
+  author    = {Pizzi, Ed and Roy, Sreya Dutta and Ravindra, Sugosh Nagavara and Goyal, Priya and Douze, Matthijs},
+  title     = {A Self-Supervised Descriptor for Image Copy Detection},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {14532--14542},
+  year      = {2022},
+  note      = {arXiv:2202.10261}
+}
+
+@inproceedings{wang2023ndec,
+  author    = {Wang, Wenhao and Sun, Yifan and Yang, Yi},
+  title     = {A Benchmark and Asymmetrical-Similarity Learning for Practical Image Copy Detection},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {37},
+  pages     = {2672--2679},
+  year      = {2023},
+  doi       = {10.1609/aaai.v37i3.25366},
+  note      = {arXiv:2205.12358}
+}
+
+% Year 2026 verified against Crossref (IJCV online 2026-01-21, print 2026-02).
+@article{wang2026anypattern,
+  author  = {Wang, Wenhao and Sun, Yifan and Tan, Zhentao and Yang, Yi},
+  title   = {{AnyPattern}: Towards In-Context Image Copy Detection},
+  journal = {International Journal of Computer Vision},
+  year    = {2026},
+  doi     = {10.1007/s11263-025-02633-x},
+  note    = {arXiv:2404.13788}
+}
+
+% ---------- Retrieval encoders / representation learning ----------
+
+@inproceedings{schroff2015facenet,
+  author    = {Schroff, Florian and Kalenichenko, Dmitry and Philbin, James},
+  title     = {{FaceNet}: A Unified Embedding for Face Recognition and Clustering},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {815--823},
+  year      = {2015},
+  doi       = {10.1109/CVPR.2015.7298682}
+}
+
+@inproceedings{chen2020simclr,
+  author    = {Chen, Ting and Kornblith, Simon and Norouzi, Mohammad and Hinton, Geoffrey},
+  title     = {A Simple Framework for Contrastive Learning of Visual Representations},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {119},
+  pages     = {1597--1607},
+  year      = {2020}
+}
+
+@inproceedings{dosovitskiy2021vit,
+  author    = {Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and Uszkoreit, Jakob and Houlsby, Neil},
+  title     = {An Image Is Worth 16x16 Words: Transformers for Image Recognition at Scale},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  note      = {arXiv:2010.11929}
+}
+
+@article{elnouby2021training,
+  author  = {El-Nouby, Alaaeldin and Neverova, Natalia and Laptev, Ivan and J{\'e}gou, Herv{\'e}},
+  title   = {Training Vision Transformers for Image Retrieval},
+  journal = {arXiv preprint arXiv:2102.05644},
+  year    = {2021},
+  doi     = {10.48550/arXiv.2102.05644}
+}
+
+@article{oquab2024dinov2,
+  author  = {Oquab, Maxime and Darcet, Timoth{\'e}e and Moutakanni, Th{\'e}o and Vo, Huy V. and Szafraniec, Marc and Khalidov, Vasil and Fernandez, Pierre and Haziza, Daniel and Massa, Francisco and El-Nouby, Alaaeldin and others},
+  title   = {{DINOv2}: Learning Robust Visual Features without Supervision},
+  journal = {Transactions on Machine Learning Research},
+  year    = {2024},
+  note    = {arXiv:2304.07193}
+}
+
+@article{simeoni2025dinov3,
+  author  = {Sim{\'e}oni, Oriane and Vo, Huy V. and Seitzer, Maximilian and Baldassarre, Federico and Oquab, Maxime and Jose, Cijo and Khalidov, Vasil and Szafraniec, Marc and Yi, Seungeun and Ramamonjisoa, Micha{\"e}l and Massa, Francisco and Haziza, Daniel and Wehrstedt, Luca and Wang, Jianyuan and Darcet, Timoth{\'e}e and Moutakanni, Th{\'e}o and Sentana, Leonel and Roberts, Claire and Vedaldi, Andrea and Tolan, Jamie and Brandt, John and Couprie, Camille and Mairal, Julien and J{\'e}gou, Herv{\'e} and Labatut, Patrick and Bojanowski, Piotr},
+  title   = {{DINOv3}},
+  journal = {arXiv preprint arXiv:2508.10104},
+  year    = {2025},
+  doi     = {10.48550/arXiv.2508.10104}
+}
+
+@inproceedings{radford2021clip,
+  author    = {Radford, Alec and Kim, Jong Wook and Hallacy, Chris and Ramesh, Aditya and Goh, Gabriel and Agarwal, Sandhini and Sastry, Girish and Askell, Amanda and Mishkin, Pamela and Clark, Jack and Krueger, Gretchen and Sutskever, Ilya},
+  title     = {Learning Transferable Visual Models from Natural Language Supervision},
+  booktitle = {Proceedings of the 38th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {139},
+  pages     = {8748--8763},
+  year      = {2021}
+}
+
+@article{tschannen2025siglip2,
+  author  = {Tschannen, Michael and Gritsenko, Alexey and Wang, Xiao and Naeem, Muhammad Ferjad and Alabdulmohsin, Ibrahim and Parthasarathy, Nikhil and Evans, Talfan and Beyer, Lucas and others},
+  title   = {{SigLIP}~2: Multilingual Vision-Language Encoders with Improved Semantic Understanding, Localization, and Dense Features},
+  journal = {arXiv preprint arXiv:2502.14786},
+  year    = {2025},
+  doi     = {10.48550/arXiv.2502.14786}
+}
+
+@article{radenovic2019gem,
+  author  = {Radenovi{\'c}, Filip and Tolias, Giorgos and Chum, Ond{\v r}ej},
+  title   = {Fine-Tuning {CNN} Image Retrieval with No Human Annotation},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume  = {41},
+  number  = {7},
+  pages   = {1655--1668},
+  year    = {2019},
+  doi     = {10.1109/TPAMI.2018.2846566}
+}
+
+@article{shrivastava2011crossdomain,
+  author  = {Shrivastava, Abhinav and Malisiewicz, Tomasz and Gupta, Abhinav and Efros, Alexei A.},
+  title   = {Data-Driven Visual Similarity for Cross-Domain Image Matching},
+  journal = {ACM Transactions on Graphics},
+  volume  = {30},
+  number  = {6},
+  pages   = {154:1--154:10},
+  year    = {2011},
+  doi     = {10.1145/2070781.2024188}
+}
+
+@inproceedings{hu2023crossdomain,
+  author    = {Hu, Conghui and Zhang, Can and Lee, Gim Hee},
+  title     = {Unsupervised Feature Representation Learning for Domain-Generalized Cross-Domain Image Retrieval},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {11016--11025},
+  year      = {2023}
+}
+
+@inproceedings{tan2021efficientnetv2,
+  author    = {Tan, Mingxing and Le, Quoc V.},
+  title     = {{EfficientNetV2}: Smaller Models and Faster Training},
+  booktitle = {Proceedings of the 38th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {139},
+  pages     = {10096--10106},
+  year      = {2021}
+}
+
+@inproceedings{liu2021swin,
+  author    = {Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
+  title     = {Swin Transformer: Hierarchical Vision Transformer Using Shifted Windows},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {10012--10022},
+  year      = {2021},
+  doi       = {10.1109/ICCV48922.2021.00986}
+}
+
+% ---------- Matching, robust geometry, 3D foundation models ----------
+
+@article{lowe2004sift,
+  author  = {Lowe, David G.},
+  title   = {Distinctive Image Features from Scale-Invariant Keypoints},
+  journal = {International Journal of Computer Vision},
+  volume  = {60},
+  number  = {2},
+  pages   = {91--110},
+  year    = {2004},
+  doi     = {10.1023/B:VISI.0000029664.99615.94}
+}
+
+@article{fischler1981ransac,
+  author  = {Fischler, Martin A. and Bolles, Robert C.},
+  title   = {Random Sample Consensus: A Paradigm for Model Fitting with Applications to Image Analysis and Automated Cartography},
+  journal = {Communications of the ACM},
+  volume  = {24},
+  number  = {6},
+  pages   = {381--395},
+  year    = {1981},
+  doi     = {10.1145/358669.358692}
+}
+
+@article{bradski2000opencv,
+  author  = {Bradski, Gary},
+  title   = {The {OpenCV} Library},
+  journal = {Dr.\ Dobb's Journal of Software Tools},
+  volume  = {25},
+  number  = {11},
+  pages   = {120--125},
+  year    = {2000}
+}
+
+@inproceedings{barath2020magsac,
+  author    = {Barath, Daniel and Noskova, Jana and Ivashechkin, Maksym and Matas, Ji{\v r}{\'\i}},
+  title     = {{MAGSAC++}, a Fast, Reliable and Accurate Robust Estimator},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {1304--1312},
+  year      = {2020},
+  doi       = {10.1109/CVPR42600.2020.00138}
+}
+
+@inproceedings{sun2021loftr,
+  author    = {Sun, Jiaming and Shen, Zehong and Wang, Yuang and Bao, Hujun and Zhou, Xiaowei},
+  title     = {{LoFTR}: Detector-Free Local Feature Matching with Transformers},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2021},
+  note      = {arXiv:2104.00680}
+}
+
+@inproceedings{chen2022aspanformer,
+  author    = {Chen, Hongkai and Luo, Zixin and Zhou, Lei and Tian, Yurun and Zhen, Mingmin and Fang, Tian and McKinnon, David and Tsin, Yanghai and Quan, Long},
+  title     = {{ASpanFormer}: Detector-Free Image Matching with Adaptive Span Transformer},
+  booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+  year      = {2022},
+  doi       = {10.1007/978-3-031-19824-3_2},
+  note      = {arXiv:2208.14201}
+}
+
+@inproceedings{lindenberger2023lightglue,
+  author    = {Lindenberger, Philipp and Sarlin, Paul-Edouard and Pollefeys, Marc},
+  title     = {{LightGlue}: Local Feature Matching at Light Speed},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2023},
+  note      = {arXiv:2306.13643}
+}
+
+@inproceedings{edstedt2024roma,
+  author    = {Edstedt, Johan and Sun, Qiyu and B{\"o}kman, Georg and Wadenb{\"a}ck, M{\aa}rten and Felsberg, Michael},
+  title     = {{RoMa}: Robust Dense Feature Matching},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  doi       = {10.1109/CVPR52733.2024.01871},
+  note      = {arXiv:2305.15404}
+}
+
+% "ECCV 2026 camera ready" confirmed against the current arXiv record
+% (2511.15706, checked 2026-07); re-check proceedings entry at camera-ready.
+@article{edstedt2025romav2,
+  author  = {Edstedt, Johan and Nordstr{\"o}m, David and Zhang, Yushan and B{\"o}kman, Georg and Astermark, Jonathan and Larsson, Viktor},
+  title   = {{RoMa} v2: Harder Better Faster Denser Feature Matching},
+  journal = {arXiv preprint arXiv:2511.15706},
+  year    = {2025},
+  doi     = {10.48550/arXiv.2511.15706},
+  note    = {To appear in ECCV 2026}
+}
+
+@inproceedings{wang2024dust3r,
+  author    = {Wang, Shuzhe and Leroy, Vincent and Cabon, Yohann and Chidlovskii, Boris and Revaud, J{\'e}r{\^o}me},
+  title     = {{DUSt3R}: Geometric {3D} Vision Made Easy},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  note      = {arXiv:2312.14132}
+}
+
+@inproceedings{leroy2024mast3r,
+  author    = {Leroy, Vincent and Cabon, Yohann and Revaud, J{\'e}r{\^o}me},
+  title     = {Grounding Image Matching in {3D} with {MASt3R}},
+  booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+  year      = {2024},
+  doi       = {10.1007/978-3-031-73220-1_5},
+  note      = {arXiv:2406.09756}
+}
+
+@inproceedings{dong2025reloc3r,
+  author    = {Dong, Siyan and Wang, Shuzhe and Liu, Shaohui and Cai, Lulu and Fan, Qingnan and Kannala, Juho and Yang, Yanchao},
+  title     = {{Reloc3r}: Large-Scale Training of Relative Camera Pose Regression for Generalizable, Fast, and Accurate Visual Localization},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2025},
+  note      = {arXiv:2412.08376}
+}
+
+@inproceedings{wang2025vggt,
+  author    = {Wang, Jianyuan and Chen, Minghao and Karaev, Nikita and Vedaldi, Andrea and Rupprecht, Christian and Novotny, David},
+  title     = {{VGGT}: Visual Geometry Grounded Transformer},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2025},
+  note      = {arXiv:2503.11651}
+}
+
+@article{torr1998gric,
+  author  = {Torr, Philip H. S.},
+  title   = {Geometric Motion Segmentation and Model Selection},
+  journal = {Philosophical Transactions of the Royal Society of London. Series A: Mathematical, Physical and Engineering Sciences},
+  volume  = {356},
+  pages   = {1321--1340},
+  year    = {1998},
+  doi     = {10.1098/rsta.1998.0224}
+}
+
+@inproceedings{cai2023doppelgangers,
+  author    = {Cai, Ruojin and Tung, Joseph and Wang, Qianqian and Averbuch-Elor, Hadar and Hariharan, Bharath and Snavely, Noah},
+  title     = {Doppelgangers: Learning to Disambiguate Images of Similar Structures},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {34--44},
+  year      = {2023},
+  doi       = {10.1109/ICCV51070.2023.00010},
+  note      = {arXiv:2309.02420}
+}
+
+@inproceedings{xiangli2025doppelgangerspp,
+  author    = {Xiangli, Yuanbo and Cai, Ruojin and Chen, Hanyu and Byrne, Jeffrey and Snavely, Noah},
+  title     = {Doppelgangers++: Improved Visual Disambiguation with Geometric {3D} Features},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2025},
+  note      = {arXiv:2412.05826}
+}
+
+% Author list (Maggio, Carlone) verified against the arXiv record for
+% 2601.19887 (checked 2026-07); no third author on v2.
+@article{maggio2026vggtslam,
+  author  = {Maggio, Dominic and Carlone, Luca},
+  title   = {{VGGT-SLAM} 2.0: Real-Time Dense Feed-Forward Scene Reconstruction},
+  journal = {arXiv preprint arXiv:2601.19887},
+  year    = {2026},
+  doi     = {10.48550/arXiv.2601.19887}
+}
+
+@article{bae2010rephotography,
+  author  = {Bae, Soonmin and Agarwala, Aseem and Durand, Fr{\'e}do},
+  title   = {Computational Rephotography},
+  journal = {ACM Transactions on Graphics},
+  volume  = {29},
+  number  = {3},
+  pages   = {24:1--24:15},
+  year    = {2010},
+  doi     = {10.1145/1805964.1805968}
+}
+
+@inproceedings{dawson2018samephoto,
+  author    = {Dawson, Mitchell and Zisserman, Andrew and Nell{\aa}ker, Christoffer},
+  title     = {From Same Photo: Cheating on Visual Kinship Challenges},
+  booktitle = {Proceedings of the Asian Conference on Computer Vision (ACCV)},
+  year      = {2018},
+  note      = {arXiv:1809.06200}
+}
+
+@article{vilesov2024deepfakes,
+  author  = {Vilesov, Alexander and Tian, Yuan and Sehatbakhsh, Nader and Kadambi, Achuta},
+  title   = {Solutions to Deepfakes: Can Camera Hardware, Cryptography, and Deep Learning Verify Real Images?},
+  journal = {arXiv preprint arXiv:2407.04169},
+  year    = {2024},
+  doi     = {10.48550/arXiv.2407.04169}
+}
+
+@techreport{malis2007homography,
+  author      = {Malis, Ezio and Vargas, Manuel},
+  title       = {Deeper Understanding of the Homography Decomposition for Vision-Based Control},
+  institution = {INRIA},
+  number      = {RR-6303},
+  year        = {2007},
+  note        = {\url{https://inria.hal.science/inria-00174036}}
+}
+
+@article{nister2004fivepoint,
+  author  = {Nist{\'e}r, David},
+  title   = {An Efficient Solution to the Five-Point Relative Pose Problem},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume  = {26},
+  number  = {6},
+  pages   = {756--770},
+  year    = {2004},
+  doi     = {10.1109/TPAMI.2004.17}
+}
+
+% ---------- Sensor forensics ----------
+
+@article{lukas2006prnu,
+  author  = {Luk{\'a}{\v s}, Jan and Fridrich, Jessica and Goljan, Miroslav},
+  title   = {Digital Camera Identification from Sensor Pattern Noise},
+  journal = {IEEE Transactions on Information Forensics and Security},
+  volume  = {1},
+  number  = {2},
+  pages   = {205--214},
+  year    = {2006},
+  doi     = {10.1109/TIFS.2006.873602}
+}
+
+@inproceedings{goljan2008printed,
+  author    = {Goljan, Miroslav and Fridrich, Jessica and Luk{\'a}{\v s}, Jan},
+  title     = {Camera Identification from Printed Images},
+  booktitle = {Security, Forensics, Steganography, and Watermarking of Multimedia Contents X, Proc.\ SPIE},
+  volume    = {6819},
+  pages     = {68190I},
+  year      = {2008},
+  doi       = {10.1117/12.766824}
+}
+
+% ---------- Historical image reuse / archival datasets ----------
+
+@article{lang2025finetuning,
+  author  = {Lang, Sarah},
+  title   = {Fine-Tuning Machine Learning with Historical Data. An Alchemical Object Detection Dataset for Early Modern Scientific Illustrations},
+  journal = {Zeitschrift f{\"u}r digitale Geisteswissenschaften},
+  volume  = {10},
+  year    = {2025},
+  doi     = {10.17175/2025_002}
+}
+
+@inproceedings{dutta2021chapbooks,
+  author    = {Dutta, Abhishek and Bergel, Giles and Zisserman, Andrew},
+  title     = {Visual Analysis of Chapbooks Printed in Scotland},
+  booktitle = {Proceedings of the 6th International Workshop on Historical Document Imaging and Processing (HIP)},
+  pages     = {67--72},
+  year      = {2021},
+  doi       = {10.1145/3476887.3476893}
+}
+
+@inproceedings{wang2025ornamentreuse,
+  author    = {Wang, Ruilin and Pivovarova, Lidia and Ryan, Yann and Tolonen, Mikko},
+  title     = {Semi-Supervised Contrastive Training for Similar Image Identification in a Large Collection of Historical Books},
+  booktitle = {Image Analysis (SCIA 2025), Lecture Notes in Computer Science},
+  pages     = {401--414},
+  year      = {2025},
+  doi       = {10.1007/978-3-031-95911-0_28}
+}
+
+@inproceedings{lee2020newspaper,
+  author    = {Lee, Benjamin Charles Germain and Mears, Jaime and Jakeway, Eileen and Ferriter, Meghan and Adams, Chris and Yarasavage, Nathan and Thomas, Deborah and Zwaard, Kate and Weld, Daniel S.},
+  title     = {The Newspaper Navigator Dataset: Extracting Headlines and Visual Content from 16 Million Historic Newspaper Pages in Chronicling America},
+  booktitle = {Proceedings of the 29th ACM International Conference on Information and Knowledge Management (CIKM)},
+  pages     = {3055--3062},
+  year      = {2020},
+  doi       = {10.1145/3340531.3412767}
+}
+
+@inproceedings{net2023transductive,
+  author    = {Net, Francesc and Folia, Marc and Casals, Pep and Gomez, Lluis},
+  title     = {Transductive Learning for Near-Duplicate Image Detection in Scanned Photo Collections},
+  booktitle = {Proceedings of the 17th International Conference on Document Analysis and Recognition (ICDAR)},
+  pages     = {3--17},
+  year      = {2023},
+  doi       = {10.1007/978-3-031-41734-4_1},
+  note      = {arXiv:2410.19437}
+}
+
+@article{giardinetti2024eycon,
+  author  = {Giardinetti, Marina and Foliard, Daniel and Schuh, Julien and Aissi, Mohamed-Salim},
+  title   = {The {EyCon} Dataset: A Visual Corpus of Early Conflict Photography},
+  journal = {Journal of Open Humanities Data},
+  volume  = {10},
+  pages   = {40},
+  year    = {2024},
+  doi     = {10.5334/johd.213}
+}
+
+@article{smits2025iln,
+  author  = {Smits, Thomas and Warner, Bethany and Fyfe, Paul and Lee, Benjamin Charles Germain},
+  title   = {A Fully-Searchable Multimodal Dataset of {The Illustrated London News}, 1842--1890},
+  journal = {Journal of Open Humanities Data},
+  volume  = {11},
+  number  = {1},
+  year    = {2025},
+  doi     = {10.5334/johd.284}
+}
+
+@article{aissi2025halftone,
+  author  = {Aissi, Mohamed Salim and Giardinetti, Marina and Bloch, Isabelle and Schuh, Julien and Foliard, Daniel},
+  title   = {Computer Vision and Halftone Visual Culture: Improving Similarity Search for Historical Photographs},
+  journal = {Multimedia Tools and Applications},
+  volume  = {84},
+  number  = {32},
+  pages   = {39451--39471},
+  year    = {2025},
+  doi     = {10.1007/s11042-025-20855-6}
+}
+
+@article{chelali2026forbin,
+  author  = {Chelali, Mohamed and Gosselet, Sylvain-Karl and Cloppet, Florence and Kurtz, Camille and Bloch, Isabelle and Foliard, Daniel},
+  title   = {The {FORBIN} Dataset: A Collection of Historical Photographs with Archival Metadata},
+  journal = {Journal of Open Humanities Data},
+  volume  = {12},
+  year    = {2026},
+  doi     = {10.5334/johd.487}
+}
+
+@misc{khanam2024yolov11,
+  author = {Khanam, Rahima and Hussain, Muhammad},
+  title  = {{YOLOv11}: An Overview of the Key Architectural Enhancements},
+  year   = {2024},
+  note   = {arXiv:2410.17725},
+  doi    = {10.48550/arXiv.2410.17725}
+}
+
+% ---------- Out-of-context misuse / media circulation ----------
+
+@inproceedings{aneja2023cosmos,
+  author    = {Aneja, Shivangi and Bregler, Christoph and Nie{\ss}ner, Matthias},
+  title     = {{COSMOS}: Catching Out-of-Context Image Misuse Using Self-Supervised Learning},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {37},
+  pages     = {14084--14092},
+  year      = {2023},
+  doi       = {10.1609/aaai.v37i12.26648},
+  note      = {arXiv:2101.06278}
+}
+
+@inproceedings{qi2024sniffer,
+  author    = {Qi, Peng and Yan, Zehong and Hsu, Wynne and Lee, Mong Li},
+  title     = {{SNIFFER}: Multimodal Large Language Model for Explainable Out-of-Context Misinformation Detection},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  note      = {arXiv:2403.03170}
+}
+
+@article{boudana2017icons,
+  author  = {Boudana, Sandrine and Frosh, Paul and Cohen, Akiba A.},
+  title   = {Reviving Icons to Death: When Historic Photographs Become Digital Memes},
+  journal = {Media, Culture \& Society},
+  volume  = {39},
+  number  = {8},
+  pages   = {1210--1230},
+  year    = {2017},
+  doi     = {10.1177/0163443717690818}
+}
+
+@article{smits2023iconic,
+  author  = {Smits, Thomas and Ros, Ruben},
+  title   = {Distant Reading 940,000 Online Circulations of 26 Iconic Photographs},
+  journal = {New Media \& Society},
+  volume  = {25},
+  number  = {12},
+  pages   = {3543--3572},
+  year    = {2023},
+  doi     = {10.1177/14614448211049459}
+}
+
+% ---------- Documentation / statistics ----------
+
+@article{gebru2021datasheets,
+  author  = {Gebru, Timnit and Morgenstern, Jamie and Vecchione, Briana and Vaughan, Jennifer Wortman and Wallach, Hanna and Daum{\'e} III, Hal and Crawford, Kate},
+  title   = {Datasheets for Datasets},
+  journal = {Communications of the ACM},
+  volume  = {64},
+  number  = {12},
+  pages   = {86--92},
+  year    = {2021},
+  doi     = {10.1145/3458723}
+}
+
+@book{efron1993bootstrap,
+  author    = {Efron, Bradley and Tibshirani, Robert J.},
+  title     = {An Introduction to the Bootstrap},
+  publisher = {Chapman \& Hall},
+  address   = {New York},
+  year      = {1993}
+}
+
+@article{mcnemar1947,
+  author  = {McNemar, Quinn},
+  title   = {Note on the Sampling Error of the Difference Between Correlated Proportions or Percentages},
+  journal = {Psychometrika},
+  volume  = {12},
+  number  = {2},
+  pages   = {153--157},
+  year    = {1947},
+  doi     = {10.1007/BF02295996}
+}
+
+@article{holm1979,
+  author  = {Holm, Sture},
+  title   = {A Simple Sequentially Rejective Multiple Test Procedure},
+  journal = {Scandinavian Journal of Statistics},
+  volume  = {6},
+  number  = {2},
+  pages   = {65--70},
+  year    = {1979}
+}
+
+@article{wilcoxon1945,
+  author  = {Wilcoxon, Frank},
+  title   = {Individual Comparisons by Ranking Methods},
+  journal = {Biometrics Bulletin},
+  volume  = {1},
+  number  = {6},
+  pages   = {80--83},
+  year    = {1945},
+  doi     = {10.2307/3001968}
+}
+
+@article{cohen1960kappa,
+  author  = {Cohen, Jacob},
+  title   = {A Coefficient of Agreement for Nominal Scales},
+  journal = {Educational and Psychological Measurement},
+  volume  = {20},
+  number  = {1},
+  pages   = {37--46},
+  year    = {1960},
+  doi     = {10.1177/001316446002000104}
+}

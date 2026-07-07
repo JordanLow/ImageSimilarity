@@ -1,0 +1,1383 @@
+% =============================================================================
+% AAAI-27 AISI submission draft (anonymous) --- assembled from section drafts.
+% Uses the OFFICIAL AAAI-27 author kit (aaai2027.sty / aaai2027.bst), copied
+% from ./authorkit/AuthorKit27/. Compile: pdflatex + bibtex + pdflatex x2.
+% AISI keyword (entered in OpenReview, not here):
+%   "AISI: Computational Social Science and Humanities"
+%
+% Working title below; alternatives proposed by section writers:
+%   - "The Camera Did Not Move: Pose Forensics for Tracing Archival
+%      Photographs into Wartime Propaganda Print"
+%   - "Exposure Identity: Separating Reprints from Re-Shots in Wartime
+%      Propaganda Archives with 3D Foundation-Model Camera Pose"
+% =============================================================================
+\documentclass[letterpaper]{article} % DO NOT CHANGE THIS
+\usepackage[submission]{aaai2027}  % DO NOT CHANGE THIS
+\usepackage[hyphens]{url}  % DO NOT CHANGE THIS
+\usepackage{graphicx} % DO NOT CHANGE THIS
+\urlstyle{rm} % DO NOT CHANGE THIS
+\def\UrlFont{\rm}  % DO NOT CHANGE THIS
+\usepackage{natbib}  % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\usepackage{caption} % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\frenchspacing  % DO NOT CHANGE THIS
+% Recommended by the kit; permitted packages only (no hyperref/geometry/etc.).
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+\setcounter{secnumdepth}{0}
+
+% --- Draft-only TODO macro: strip all \todo{}, remove \usepackage{xcolor},
+% and delete all draft comment blocks (incl. the trailing reproducibility
+% block and refs.bib comments) before submission. --------------------------
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+
+\title{Same Photograph or Same Scene? Camera-Pose Forensics for Tracing Archival Photographs into Wartime Propaganda Print}
+\author{Anonymous submission}
+\affiliations{Anonymous submission}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Wartime propaganda magazines reprinted archival photographs after cropping,
+retouching, and recaptioning them; the record of that editorial labor survives
+only as pairwise identities between archival exposures and printed
+reproductions. Recovering those identities at scale is a verification problem,
+not a retrieval one: the historian must decide whether a print derives from
+the \emph{same exposure} as an archival photograph, or from a second
+photograph of the same scene taken moments apart---the error that turns
+provenance tools into misattribution machines. We present a four-stage
+pipeline: self-supervised cross-domain retrieval, dense-correspondence
+filtering, homography inlier-ratio gating, and a new forensic signal---the
+relative camera pose inferred by a feed-forward 3D foundation model (VGGT).
+Re-editions of one exposure behave as pictures of a picture and yield
+near-zero inferred pose displacement; same-scene negatives do not. With all
+thresholds frozen on a development shard, the pose gate raises held-out
+verification precision from 83.7\% (at 100\% recall) to 90.2\% at 98.4\%
+recall, conditional on the candidate set. We release NCR-Match, 2{,}636
+expert-verified photograph--print pairs with exposure-identity versus
+same-scene labels drawn from the North China Railway Archive, a CC~BY~4.0
+occupation-era collection, and evaluate cross-system transfer to an opposing
+propaganda apparatus and historian-in-the-loop utility.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+In March 1942 the \emph{Jinchaji Pictorial}, the flagship photographic organ
+of the Chinese Communist base areas, printed a photograph by Sha Fei of the
+peasant Liu Hanxing enlisting in the Eighth Route Army, under the page title
+``Model Families: Parents Send Their Children, Wives Send Their Boys.'' The
+same exposure was reprinted at least three more times over the next four
+years; by 1945 Liu's name had been removed and the caption read ``common
+people,'' and by 1946 he had become simply ``a youth''
+\cite{du2024probing,du2025metaphor}. No single page records this
+trajectory. The editorial labor of wartime propaganda---cropping, retouching,
+splitting, recaptioning---is invisible in the printed object and undocumented
+by the institutions that performed it: as Du observes, such archives preserve
+the photographs but not the decisions \cite{du2025metaphor}. Propaganda
+systems operate precisely by
+recirculating a stable stock of authorized images under shifting textual
+frames \cite{yurchak2005everything}, so the record of that work survives only
+as thousands of pairwise identities between an archival exposure and a printed
+reproduction---each individually minor, collectively the only evidence of how
+the apparatus curated reality, what Du calls ``the evidence of the small''
+\cite{du2026evidence}. The scale defeats close reading alone
+\cite{arnold2019distant}: the North China Railway Archive, the photographic
+record of the Japanese-run railway company at the center of occupation
+publicity in North China \cite{kushner2006thought,earhart2008certain}, holds
+roughly 39{,}000 photographs (1939--1945), an unknown fraction of which
+resurfaced in the coeval propaganda pictorial \emph{North China}
+(\emph{Hokushi}, 1939--1943). Figure~\ref{fig:teaser} shows the pair type at
+issue.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.94\columnwidth}{\centering\vspace{2em}
+\todo{Figure 1: one verified photo--halftone reprint pair vs.\ one
+same-scene-seconds-apart negative, with inferred camera frusta overlaid ---
+render from the pose-validity visualization batch (W11, report section 6.5)}
+\vspace{2em}}}
+\caption{A verified reprint pair (one exposure, re-edited into print) versus
+a same-scene negative exposed moments apart, with the inferred cameras
+overlaid.}
+\label{fig:teaser}
+\end{figure}
+
+Computer vision appears to be the obvious remedy, and published work has shown
+that learned embeddings can surface photograph--print candidates across the
+severe domain gap of halftone screening, contrast loss, and cropping
+\cite{du2024probing}. But retrieval answers the wrong question. Retrieval
+finds look-alikes; the historian's claim---\emph{this print is that
+negative}---is a claim of \emph{exposure identity}. Press photographers worked
+in bursts, and archives are dense with frames taken seconds apart from nearly
+the same position; a system that cannot separate ``same photograph, edited''
+from ``same scene, next frame'' does not merely lose precision points, it
+manufactures confident misattributions of photographer, place, and date. The
+failure mode is not hypothetical: the second round of our benchmark's
+verification protocol excluded a nontrivial fraction of first-round
+candidates as exactly such same-scene negatives (see Dataset Construction).
+The distinction itself is classical---image phylogeny separates near-duplicates
+(one exposure, a chain of transformations) from semantically similar images of
+the same scene \cite{dias2013forests,chum2007scalable}---yet modern
+copy-detection benchmarks are born-digital and treat same-scene shots as
+negatives by construction \cite{douze2021disc,pizzi2022sscd,wang2023ndec}, and
+no public benchmark poses this boundary on archival photo-to-print material.
+Where \citet{du2024probing} demonstrated proof-of-concept circulation
+forensics with retrieval alone, this paper contributes the verification
+decision retrieval cannot supply, delivered at benchmark scale and released
+with the submission. Nor is
+the problem antiquarian: recaptioned reuse of authentic photographs is the
+dominant mechanism of contemporary out-of-context misinformation, for whose
+modern form this community has built detectors and benchmarks
+\cite{aneja2023cosmos,qi2024sniffer}. A wartime propaganda corpus is the same
+mechanism with ground truth---a closed, fully attributable natural experiment
+in institutional image reuse, eighty years before the feed.
+
+We answer the exposure-identity question with a four-stage funnel
+(Figure~\ref{fig:pipeline}). A self-supervised fusion head over frozen vision
+backbones (DINOv3 \cite{simeoni2025dinov3}, EfficientNetV2, Swin) retrieves
+top-ranked print candidates for each archival photograph; ASpanFormer
+\cite{chen2022aspanformer} extracts dense correspondences and discards pairs
+with too few; a seeded robust homography fit (MAGSAC++) gates on the inlier
+ratio and aligns the photograph onto the print; and a final judge inspects a
+signal new to
+provenance analysis: the relative camera pose inferred by the feed-forward 3D
+foundation model VGGT \cite{wang2025vggt}. The intuition is geometric. A
+genuine reprint is a picture of a picture: after alignment the pair carries no
+parallax, and the model infers essentially the same camera for both frames. A
+second exposure of the same scene, however similar, retains parallax that
+surfaces as rotation and lateral translation of the inferred camera. We
+convert this into a component-weighted pose-displacement score---strict on
+rotation and $x$/$y$ translation, lenient on the depth and field-of-view terms
+that cropping and rescanning perturb---and threshold it. While feed-forward 3D
+foundation models have been used to verify whether two images depict the same
+surface or place
+\cite{cai2023doppelgangers,xiangli2025doppelgangerspp,maggio2026vggtslam},
+and copy detection has relied on 2D appearance descriptors with same-scene
+shots treated as negatives by construction
+\cite{douze2021disc,pizzi2022sscd,wang2023ndec}, we are---to our
+knowledge---the first to use the relative camera pose inferred by such models
+as a provenance signal separating re-editions of the same exposure (crops,
+edits, halftone reprints) from distinct exposures of the same scene. On the
+held-out validation shard of our benchmark, with every threshold frozen on the
+development shard, the full system attains verification precision 90.2\% and
+recall 98.4\% ($F_1$ 94.1), conditional on the candidate set; the pose gate
+contributes $+6.5$ points of precision over inlier-ratio verification alone
+(83.7\% $\rightarrow$ 90.2\%) at a cost of 1.6 points of recall.
+
+\noindent This paper makes five contributions:
+\begin{itemize}
+\item \textbf{Task.} We formalize \emph{exposure-identity vs.\ same-scene
+  discrimination} for archival photo-to-print tracing, grounding it in the
+  phylogeny dichotomy between near-duplicate and semantically similar images
+  \cite{dias2013forests} and the IND/NIND (identical vs.\ non-identical
+  near-duplicate) taxonomy
+  \cite{chum2007scalable,jindaapiraksa2013california}, and argue that it is
+  the decision on which archival provenance claims---and their modern
+  out-of-context analogues---rest.
+\item \textbf{Method.} Inferred relative camera pose as a provenance signal,
+  with the component-weighted decision rule above and ablations isolating it
+  against verification without pose, classical pose recovered for free from
+  the already-computed homography and from essential-matrix decomposition,
+  MASt3R pose \cite{leroy2024mast3r}, and a learned classifier over identical
+  inputs \todo{Table~\ref{tab:verification} rows B2, B4--B10: P/R/F1 + PR-AUC
+  per variant with bootstrap CIs and McNemar tests vs.\ the full system ---
+  CPU ablations over cached manifests plus MASt3R run W6}.
+\item \textbf{Benchmark.} NCR-Match: 2{,}636 verified
+  photograph--print pairs linking the North China Railway Archive
+  ($\sim$39{,}000 photographs, 1939--1945) to the magazine \emph{North China}
+  (1939--1943), embedded in a working corpus of 42{,}773 cropped images,
+  curated with a two-round verification protocol in which same-scene
+  near-misses are excluded as labeled hard negatives. Archive images and
+  metadata are CC~BY~4.0, so the benchmark is deposited with this submission
+  with attribution to the archive. To our knowledge it is the first public
+  benchmark with exposure-identity versus same-scene labels on cross-domain
+  (photograph vs.\ halftone print) archival material. Labels are
+  expert-adjudicated under a written codebook \todo{inter-annotator agreement:
+  Cohen's $\kappa$ from the dual-annotation campaign, report section 6.6}.
+\item \textbf{Cross-system transfer.} With all thresholds frozen, the pipeline
+  transfers from Japanese occupation propaganda to the opposing Communist
+  base-area system: the \emph{Jinchaji Pictorial} / Papers of Sha Fei corpus
+  (2{,}146 photographs, 1{,}122 pages, 4{,}390 crops, 230 annotated pairs)
+  studied by prior retrieval-only work
+  \cite{du2024probing}. \todo{Retrieval Recall@10/15 and mAP over the 230
+  verified pairs + verification P/R/F1 conditional on hand-labeled filter
+  survivors, thresholds frozen --- Jinchaji run W10. Jinchaji side releases
+  annotations and identifiers only, no images.}
+\item \textbf{Historian-in-the-loop evaluation and findings.} An annotation
+  reliability study \todo{$\kappa$, adjudicated gold labels, `Unsure' as a
+  first-class outcome}, a within-subjects time-saved study \todo{4--6
+  historians, time-to-first-verified-republication and verified matches per
+  30-minute session, pipeline-verified candidates vs.\ plain top-10 list},
+  and new historical findings surfaced by the system \todo{2--3 case studies
+  from the confirmed-match list, adjudicated by the domain expert}.
+\end{itemize}
+
+The system is built for a deployment path rather than a demonstration: the
+anonymized code in the supplementary material, the benchmark, and the
+annotation codebook are deposited with this submission, and the pipeline is
+designed to slot into the verification workflows of the archives and research
+groups that steward these collections. Concretely, the candidate-review
+interface used in the historian study of the Experiments section is part of
+the code release; the verified-pair layer is exported in a tabular,
+identifier-keyed format suitable for ingestion by an archive's public
+catalog; and the frozen-threshold transfer protocol demonstrated on the
+Jinchaji corpus doubles as the documented onboarding recipe for applying the
+system to a new collection. Its design is ethics-aware by
+principle: \emph{the pipeline does not interpret; it retrieves}
+\cite{du2026evidence}. Every accepted pair ships with its geometric evidence,
+every threshold is published, ``Unsure'' is reported rather than silently
+dropped, and the interpretive claim---what a recaptioned reprint
+\emph{meant}---remains the historian's to make. We return to the dual-use
+risks of automated provenance assertion, and to the contextualization owed to
+imagery produced by occupation and propaganda apparatuses, in the Ethics
+section.
+
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Content-Based Retrieval for Archives}
+Deep metric learning made instance-level retrieval practical
+\cite{schroff2015facenet}, and self-supervised contrastive objectives such as
+SimCLR proved effective for learning transformation-invariant descriptors
+\cite{chen2020simclr}. Transformer encoders sharpened global retrieval
+features further \cite{dosovitskiy2021vit,elnouby2021training}; today,
+self-supervised and image--text foundation encoders---DINOv2 and DINOv3
+\cite{oquab2024dinov2,simeoni2025dinov3}, CLIP \cite{radford2021clip}, and
+SigLIP~2 \cite{tschannen2025siglip2}---supply strong retrieval features off
+the shelf. Matching across a change of medium or style is the harder,
+cross-domain variant of the problem
+\cite{shrivastava2011crossdomain,hu2023crossdomain}, and the
+photograph-to-halftone gap studied here is an extreme instance of it. We
+therefore treat retrieval as a component rather than a contribution: our fused
+encoder exists to propose candidates, and we evaluate it against the
+off-the-shelf encoders above.
+
+\subsection{Copy Detection and the Same-Scene Boundary}
+Near-duplicate and copy detection is the retrieval special case closest to our
+task. Early benchmarks were small and gentle: Copydays covers 157 source
+images under simple edits \cite{douze2009copydays}. DISC21 scaled the problem
+to a million-image reference set under adversarial transformations, but its
+queries and references remain born-digital \cite{douze2021disc}, and SSCD
+distilled the resulting lessons into the standard copy-detection descriptor
+\cite{pizzi2022sscd}. The frontier these efforts name is precisely our problem
+class: the NDEC benchmark introduced hard negative pairs that are inherently
+similar rather than edited copies, with an asymmetrical similarity objective
+to handle them \cite{wang2023ndec}, and AnyPattern extends copy detection to
+unseen edit patterns \cite{wang2026anypattern}. The distinction itself is
+older. Near-identical image detection was posed by \citet{chum2007scalable},
+and California-ND annotates a personal photo collection with exactly the split
+we need: identical near-duplicates (variants of one exposure) versus
+non-identical near-duplicates (different exposures of similar content)
+\cite{jindaapiraksa2013california}. Most directly, the image-phylogeny
+literature formalized the boundary over a decade ago: Dias, Rocha, and
+Goldenstein reconstruct transformation trees over near-duplicates
+\cite{dias2012phylogeny} and, in extending trees to forests, define the
+\emph{semantically similar} images that must be kept out of a phylogeny---the
+same scene captured at a ``different point in space and time''
+\cite{dias2013forests}. Provenance analysis operationalizes phylogeny at scale
+with 2D local features and appearance descriptors \cite{moreira2018provenance},
+standardized by the NIST Media Forensics Challenge protocols \cite{guan2019mfc}
+and recently rebuilt on vision transformers
+\cite{zhang2024provenancevit,lai2025provenance}. Across this entire line, the
+copy-versus-scene boundary is enforced by appearance alone; no system consults
+the camera geometry that defines it. To our knowledge, ours is the first
+provenance system to enforce the phylogeny boundary geometrically rather than
+by appearance, and the first tested on cross-domain, photograph-to-print
+archival material.
+
+\subsection{Geometric Verification and 3D Foundation Models}
+Confirming that a retrieved candidate corresponds to a query, rather than
+merely resembling it, is classically the job of local features and robust
+estimation: SIFT correspondences filtered by RANSAC
+\cite{lowe2004sift,fischler1981ransac}. Detector-free transformer matchers
+such as LoFTR \cite{sun2021loftr} and ASpanFormer \cite{chen2022aspanformer}
+find dense correspondences under weak texture and heavy degradation, where
+halftone dot screens defeat classical detectors; LightGlue
+\cite{lindenberger2023lightglue} and RoMa
+\cite{edstedt2024roma,edstedt2025romav2} push accuracy and efficiency further.
+In our pipeline this stage is a learned form of the historian's side-by-side
+comparison. A newer family of feed-forward 3D foundation models regresses
+scene geometry directly: DUSt3R and MASt3R predict pointmaps and matches from
+image pairs \cite{wang2024dust3r,leroy2024mast3r}, Reloc3r regresses relative
+camera pose at scale \cite{dong2025reloc3r}, and VGGT jointly predicts
+cameras, depth, and point tracks for arbitrary image sets \cite{wang2025vggt}.
+Deciding per image pair whether a homography (no parallax) or a fundamental
+matrix (genuine two-view parallax) better explains the correspondences is a
+classical model-selection problem \cite{torr1998gric}; our pose gate is its
+forensic descendant, replacing information criteria over sparse
+correspondences with halftone-robust dense matching and the metric pose head
+of a 3D foundation model. The nearest neighbors of that use are Doppelgangers
+and Doppelgangers++, which learn to reject visually convincing matches between
+\emph{different} surfaces to disambiguate structure from motion
+\cite{cai2023doppelgangers,xiangli2025doppelgangerspp}; our decision has the
+opposite polarity---both images genuinely show the same surface, and the
+question is whether they are the same exposure of it. VGGT-SLAM~2.0 uses VGGT
+internals as a training-free verifier of candidate loop closures
+\cite{maggio2026vggtslam}: same-place verification inside SLAM, not
+duplicate-versus-reshot forensics. Computational re-photography estimated the
+pose delta between a historical photograph and a live viewfinder to guide a
+photographer back to the original viewpoint \cite{bae2010rephotography}---
+inter-photograph camera pose as a first-class quantity, but in an interactive
+rather than forensic setting. Same-photo discrimination itself appears once
+before, on 2D appearance: detecting whether two face crops derive from one
+photograph, to expose bias in kinship benchmarks \cite{dawson2018samephoto}---
+no geometry, and never extended to provenance. A related intuition, that a
+photograph of a flat print or screen betrays itself geometrically, underlies
+recapture detection in image-authenticity verification
+\cite{vilesov2024deepfakes}; that family makes single-image attack decisions,
+not pairwise provenance decisions. In sum, none of these lines uses inferred
+relative camera pose to decide exposure identity; that use, argued in the
+Introduction, is ours.
+
+\subsection{Why Not Sensor Forensics?}
+The natural forensic reflex for the same-exposure question is sensor-noise
+attribution: PRNU fingerprints identify the source camera of a digital image
+\cite{lukas2006prnu} and survive, weakly, into printed copies
+\cite{goljan2008printed}. Three facts rule this channel out here. First,
+wartime photographs were exposed on film; there is no digital sensor and hence
+no PRNU to extract. Second, a device fingerprint identifies the camera, not
+the exposure: two frames taken seconds apart with the same camera share it, so
+it answers the wrong question. Third, halftone screening and generational
+duplication destroy the high-frequency signal the method depends on, a
+degradation documented in the printed-image study itself
+\cite{goljan2008printed}. Geometry survives exactly where sensor noise dies:
+the projective relation between two prints of one exposure is untouched by
+screening.
+
+\subsection{Historical Image Reuse and Cross-Domain Datasets}
+Reuse of visual material predates photography: the cost of woodblocks and
+copperplates led early modern printers to recycle blocks across editions, and
+object detection plus visual search now recovers those block-sharing networks
+\cite{lang2025finetuning,dutta2021chapbooks}; contrastive training likewise
+clusters recurring printing ornaments across eighteenth-century books
+\cite{wang2025ornamentreuse}. For photographic archives, Newspaper Navigator
+established the page-level visual-extraction lineage from which our cropping
+stage descends \cite{lee2020newspaper}, and transductive fine-tuning has been
+applied to near-duplicate detection in scanned photo collections
+\cite{net2023transductive}---the archival near-duplicate setting, addressed
+with 2D descriptors and no geometry. Purpose-built historical corpora are
+growing: EyCon offers roughly 130k digitized photographs and press pages from
+the conflicts of 1890--1918 \cite{giardinetti2024eycon}; the Illustrated
+London News dataset pairs some 72k wood engravings with multimodal search
+\cite{smits2025iln}; and FORBIN releases a press-photography agency archive of
+the early twentieth century with rich archival metadata and an explicit
+image-reuse research agenda \cite{chelali2026forbin}. The closest
+methodological neighbor is the EyCon group's halftone similarity work
+\cite{aissi2025halftone}, which combines visual and textual similarity to
+improve similarity search over halftone press photographs. Two differences
+position our task against theirs: their goal is intra-corpus similarity
+neighborhoods within a single digitized collection, whereas ours is open-set
+matching across two collections---an archive of original photographs and a
+printed magazine; and their output is a ranked neighborhood, whereas ours is a
+verified pair-level decision about exposure identity. None of these corpora
+carries verified pair ground truth linking a photograph to its printed
+reproduction; NCR-Match fills that gap (see the contributions above). Finally,
+\citet{du2024probing} demonstrated proof-of-concept circulation forensics on
+WWII East Asian pictorials with an ensemble retrieval model, reporting 77.8\%
+top-15 retrieval on the Jinchaji corpus, and Du traced the editorial cropping
+and recaptioning of such photographs through close reading
+\cite{du2025metaphor}. Building on that proof of concept, this paper
+contributes what neither work possessed: a scaled, benchmarked, and released
+matching system, and a verification signal that decides whether two images
+share an exposure.
+
+\subsection{Out-of-Context Misuse and Computational Propaganda}
+The decision our system makes---same exposure or not---is the evidentiary
+substrate of a problem this community already studies. Out-of-context misuse,
+in which an authentic image recirculates under a false caption, is the
+cheapest and most common form of visual misinformation; COSMOS detects it by
+grounding captions against image regions \cite{aneja2023cosmos}, and SNIFFER
+adds multimodal LLM-based explanation \cite{qi2024sniffer}. Media scholarship
+documents the same mechanics across a century: iconic photographs are revived
+and resignified as memes \cite{boudana2017icons}, and their online
+circulations can be traced at the scale of hundreds of thousands of reposts
+\cite{smits2023iconic}. A 1943 propaganda magazine recaptioning an archival
+photograph is mechanically the same act as a modern out-of-context post---the
+wartime corpus is a fully labeled natural experiment in institutional image
+reuse, with the added difficulty that each ``repost'' passed through a
+halftone press. Methodologically, we invert distant viewing
+\cite{arnold2019distant}: rather than reading a large corpus for aggregate
+patterns, Digital Historical Forensics uses scale to locate the singular
+object and then reads it closely \cite{du2026evidence}, with the division of
+labor between pipeline and historian fixed by the design principle stated in
+the Introduction.
+
+\section{Task and the NCR-Match Benchmark}
+\label{sec:task}
+
+\subsection{Exposure Identity vs.\ Same Scene}
+
+Given a query archival photograph $q$ and a candidate reproduction $c$
+cropped from a printed page, the task is to decide whether the pair is
+\emph{exposure-identical}: whether both images derive from a single release
+of the shutter---one negative---so that $c$ is related to $q$ by a chain of
+reproduction transformations (cropping, rotation, mirroring, rescaling,
+retouching, halftone screening, and generational re-photography of prints).
+The contrasting case is a \emph{same-scene negative}: $q$ and $c$ depict the
+same scene but originate from distinct exposures---adjacent frames on a roll,
+or frames made moments apart from a nearby vantage point. The dichotomy
+itself is established. Image phylogeny distinguishes near-duplicates, related
+by a transformation chain from a common source, from ``semantically similar''
+images captured by a camera at a different point in space and time
+\cite{dias2012phylogeny,dias2013forests}, and near-duplicate retrieval
+separates identical from non-identical near-duplicates (IND vs.\ NIND)
+\cite{chum2007scalable,jindaapiraksa2013california}. NCR-Match
+operationalizes this boundary as a labeling standard on cross-domain archival
+material, where it carries evidentiary weight: for the provenance claim
+``this archival photograph is the one printed on this page,'' a same-scene
+negative is not a weaker match but a false one.
+
+Archival practice makes such negatives dense rather than exotic.
+Photographers on assignment exposed sequences of near-identical frames, and
+picture editors selected among the variants, sometimes printing different
+frames of one sequence in different issues \cite{du2025metaphor}; wartime
+pictorials also recirculated the same negative across publications
+\cite{du2024probing}. The confusable pairs in this corpus therefore arise
+organically from production practice, unlike born-digital copy-detection
+benchmarks, whose negatives are unrelated by construction and whose
+same-scene confusables are rare or synthetic
+\cite{douze2021disc,wang2023ndec}. On our development shard, 316 of 641
+expert-labeled candidate pairs (49\%) are negatives, in large part same-scene
+look-alikes (\todo{exact same-scene vs.\ unrelated split of labeled
+negatives, from the negative-type audit of Shards 1--3}).
+Table~\ref{tab:dataset} summarizes the benchmark and its shards.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\multicolumn{2}{@{}l}{\emph{Source material}}\\
+Archive photographs (NCR Archive, 1939--1945) & $\sim$39{,}000 \\
+\emph{North China} magazine issues (1939--1943) & \todo{issue count} \\
+Working corpus (YOLOv11 crops, both collections) & 42{,}773 \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Exposure-identity verification (two rounds)}}\\
+First-round candidate pairs & \todo{count} \\
+Excluded in round two as same-scene & \todo{count} ($\sim$7\%) \\
+Verified pairs (NCR-Match) & 2{,}636 \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Labeled candidate pairs (pos.\,/\,neg.\,/\,Unsure)}}\\
+Shard 1 (development) & 325\,/\,316\,/\,\todo{n} \\
+Shard 2 (validation, thresholds frozen) & 252\,/\,386\,/\,\todo{n} \\
+Shard 3 (test, evaluated once) & \todo{n\,/\,n\,/\,n} \\
+Inter-annotator agreement (Cohen's $\kappa$) & \todo{$\kappa$} \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Transfer domain (Jinchaji Pictorial\,/\,Papers of Sha Fei)}}\\
+Photographs\,/\,magazine pages & 2{,}146\,/\,1{,}122 \\
+Crops\,/\,annotated pairs & 4{,}390\,/\,230 \\
+\bottomrule
+\end{tabular}
+\caption{NCR-Match at a glance. Verification labels exist for candidate pairs
+that survive retrieval and the correspondence floor; verification metrics are
+therefore conditional on the candidate set (see Experiments), and end-to-end
+recall is reported separately as a survival analysis over the 2{,}636
+verified pairs.}
+\label{tab:dataset}
+\end{table}
+
+\subsection{Dataset Construction}
+
+\textbf{Sources.} NCR-Match pairs photographs from the North China Railway
+Archive---approximately 39{,}000 photographs taken in Japanese-occupied North
+China between 1939 and 1945, digitized and published with metadata under
+CC~BY~4.0 \cite{ncrarchive2019}\footnote{\url{https://codh.rois.ac.jp/north-china-railway/}}---with
+reproductions in the Japanese-language pictorial \emph{North China}
+(\emph{Hokushi}, 1939--1943). Magazine pages mix several photographs with
+text; following the page-segmentation lineage of Newspaper Navigator
+\cite{lee2020newspaper}, a YOLOv11 detector \cite{khanam2024yolov11} trained
+on a small annotated page sample crops individual photographs. The working
+corpus comprises 42{,}773 cropped images across the two collections;
+crop-stage quality is \todo{detection precision/recall on a 100-page manually
+audited sample --- YOLOv11 QC audit}.
+
+\textbf{Two-round verification.} Candidate photo--print pairs were proposed
+by embedding retrieval with geometric matching over the working corpus
+(\todo{first-round candidate-pair count}) and verified by hand in two rounds:
+round one screened candidates for visual identity; round two re-examined
+every accepted pair specifically for the same-scene failure mode. About 7\%
+of first-round candidates were identified in round two as same-scene
+negatives and excluded, leaving 2{,}636 verified exposure-identity pairs,
+each carrying magazine issue, date, and page metadata. The exclusion rate is
+itself evidence for the task: even under careful single-pass review, roughly
+one accepted candidate in fourteen was a different exposure of the same
+scene. The excluded pairs are retained as labeled same-scene hard negatives
+(\todo{confirm the round-two exclusion list ships in the release}).
+
+\textbf{Labeled verification shards.} For threshold development and testing,
+the working corpus is deterministically partitioned into six shards of
+roughly 7{,}000 images each; three are labeled in this work. Within a shard,
+each query photograph's ten highest-ranked print candidates are matched with
+ASpanFormer \cite{chen2022aspanformer}, and pairs passing the correspondence
+floor (roughly 650 per shard; see Method) receive human labels. Verification
+labels thus exist only for pairs the funnel surfaces, and all verification
+metrics are reported conditional on the candidate set (see Experiments).
+Shard~1 is the development set---all thresholds and the pose-component
+weighting were chosen here---with 325 positive and 316 negative pairs.
+Shard~2 is held-out validation, evaluated once with everything frozen:
+252\,/\,386. Shard~3 is an untouched test shard, labeled under the codebook
+below and evaluated exactly once: \todo{Shard-3 positive/negative/Unsure
+counts, from the Shard-3 labeling campaign}. Unsure labels (\todo{Unsure
+counts per shard, from the dual-annotation campaign}) are reported, never
+silently dropped.
+
+\textbf{Transfer domain.} A second, disjoint corpus supports cross-domain
+evaluation: the \emph{Jinchaji Pictorial} and the Papers of Sha Fei (2{,}146
+photographs, 1{,}122 magazine pages, 4{,}390 crops), with 230 annotated
+photo--print pairs from \citet{du2024probing}. The two corpora come from
+opposing propaganda
+systems---Japanese occupation publishing and Communist base-area
+publishing---with different printing technology and degradation profiles.
+
+\subsection{Annotation Protocol and Reliability}
+
+Labels are governed by a written codebook whose rulings fix the two genuinely
+contested cases: adjacent frames from one photographing sequence are
+same-scene negatives, however similar; and disjoint crops from a single
+negative are positives---exposure identity does not require overlapping image
+content. Each candidate pair is labeled independently by two annotators, a
+domain-expert historian of wartime East Asian print media and a trained
+annotator, with \emph{Unsure} as a first-class label; disagreements are
+adjudicated into gold labels. Inter-annotator agreement is \todo{Cohen's
+$\kappa$ over the dual, independently labeled Shard 1--3 candidate pairs
+($\approx$1{,}950), from the relabeling campaign}. Every verified positive
+additionally carries a trace type---halftone-only, crop, rotation/mirror,
+retouch, or recaption---with distribution \todo{trace-type distribution over
+the 2{,}636 verified positives, expert taxonomy tagging}; per-type pipeline
+pass rates appear in the Experiments section. The recaption class---
+near-identical pixels under a changed caption---is detectable as an image
+match, but its editorial significance is invisible to an image-only system
+(see Limitations).
+
+\subsection{Release, Licensing, and Known Biases}
+
+NCR-Match is deposited with the supplementary material, together with
+anonymized code, rather than promised: image crops, pair labels, shard
+assignments, trace annotations, the codebook, and per-pair metadata. The
+North China Railway Archive publishes its photographs and metadata under
+CC~BY~4.0, and the release attributes all NCR imagery to the archive
+accordingly. For the Jinchaji domain we release annotations and image
+identifiers only, no image data. A datasheet \cite{gebru2021datasheets}
+documents collection, the two-round verification protocol, annotation, and
+known biases. Chief among these: the source archive is the product of
+Japanese corporate and military photography---it records what an occupation
+apparatus chose to photograph---so both subject matter and the trace-type
+distribution reflect that selection. We state this as a documented limitation
+on generalization claims rather than treating the corpus as a neutral sample
+of wartime photography (see Ethics).
+
+\section{Method}
+\label{sec:method}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.94\columnwidth}{\centering\vspace{2em}
+\todo{pipeline figure: four-stage funnel with one photo--print pair as
+running example (archival photograph, retrieved print crop, ASpanFormer
+correspondences, homography-aligned overlay, VGGT pose deltas), annotated
+with per-stage survivor counts from the survival audit (W5/W11)}
+\vspace{2em}}}
+\caption{Overview of the four-stage verification funnel.}
+\label{fig:pipeline}
+\end{figure}
+
+Figure~\ref{fig:pipeline} gives an overview. Given an archival photograph
+(source) and a corpus of cropped print images (targets), the pipeline is a
+four-stage funnel: (1)~\emph{fusion retrieval} proposes, for each source, its
+top-$K$ most similar targets; (2)~\emph{detector-free matching} establishes
+dense correspondences and discards pairs below a correspondence floor;
+(3)~a \emph{geometric-consistency gate} requires the correspondences to be
+explainable by a single planar projective map; (4)~a \emph{pose-based
+decision layer} labels each surviving pair \emph{same exposure} or
+\emph{same scene, different exposure}. Stages are ordered by cost, and each
+stage writes every measured signal, decision, and machine-readable rejection
+reason to an append-only manifest, so all threshold-level ablations replay
+from cached artifacts without GPU recomputation; every randomized estimator
+is seeded, and the released code reproduces the reported decisions
+bit-for-bit. Because the funnel restricts what later stages see, every metric
+downstream is reported against a named denominator (see Experiments).
+
+\subsection{Stage 1: Fusion Retrieval}
+
+The retrieval encoder follows the frozen-ensemble design validated on
+archival photo--print retrieval by \citet{du2024probing}, with the ViT
+backbone upgraded to DINOv3. Each image is resized to $224{\times}224$ and
+rendered as three-channel grayscale before ImageNet normalization: across
+the photograph/halftone gap, tonal structure, not color, is the informative
+channel. Three frozen backbones encode the image---DINOv3 ViT-L/16
+\citep[1{,}024-D;][]{simeoni2025dinov3}, EfficientNetV2-M
+\citep[1{,}000-D;][]{tan2021efficientnetv2}, and Swin-T
+\citep[1{,}000-D;][]{liu2021swin}---and their concatenated 3{,}024-D output
+is projected by a two-layer MLP head ($3{,}024 \!\to\! 2{,}000$, ReLU,
+$\to\! 1{,}000$). Only the head is trained, with SimCLR-style
+self-supervision \citep{chen2020simclr} on the unlabeled 42{,}773-crop
+working corpus: two augmented views (random crops and rotations) per image,
+contrastive temperature $0.05$, batches of 16 images (32 views), 50 epochs,
+SGD with learning rate $10^{-5}$, momentum $0.9$, weight decay $10^{-3}$,
+fixed seed. No pair labels are used at any stage of training. Because the
+corpus mixes both domains, the head learns halftone-invariant features;
+because it is also the corpus later searched, the setup is transductive,
+which we disclose and control \todo{transductive control: retrain the
+fusion head excluding all Shard-3 images and show Shard-3 verification F1
+unchanged within the bootstrap CI --- run W9}. Embeddings are
+$\ell_2$-normalized and compared by cosine similarity; the $K{=}10$
+highest-scoring targets per source become candidate pairs \todo{retrieval
+Recall@K (K=5--30) and mAP over verified pairs, per encoder incl.\
+off-the-shelf baselines, Table~\ref{tab:retrieval} --- run W4 from the cached
+\texttt{feature\_cache.npz}}.
+
+\subsection{Stage 2: Detector-Free Matching and Correspondence Floor}
+
+Halftone screening, retouching, and paper degradation defeat detector-based
+local features, so we match with ASpanFormer \citep{chen2022aspanformer}
+(pretrained outdoor weights; grayscale; long side resized to 1{,}024\,px,
+aspect preserved), which regresses dense correspondences without keypoint
+detection. For each candidate pair we record the raw correspondence set and
+its epipolar-consistent subset under a fundamental-matrix fit with seeded
+RANSAC \citep[\texttt{FM\_RANSAC}, 1\,px reprojection threshold,
+\texttt{cv2.setRNGSeed} before every robust
+fit;][]{fischler1981ransac,bradski2000opencv}. A pair advances only if its
+correspondence count clears a floor $\tau_{\mathrm{corr}}$
+\todo{BLOCKING, resolve before any other table row is run: state
+$\tau_{\mathrm{corr}}$ for the Shard-1/2 runs (working log records
+50/75/100 in different places), resolve whether the floor applies to raw
+correspondences or to epipolar inliers (the code gates on the filtered
+count, the log narrative says raw), and verify that the resolved definition
+regenerates exactly the 641/638 labeled candidate sets of Shards~1--2 that
+produced rows B2/B3; floor swept 0--200 in
+Table~\ref{tab:verification} row~B1, CPU-only from
+\texttt{aspan\_all\_manifest.jsonl} --- run W1}. The floor is a compute
+gate, not a match decision: it keeps the expensive pose stage off hopeless
+pairs, and because every attempted pair---including failures---is logged,
+the floor can be swept post hoc without re-running the matcher.
+
+\subsection{Stage 3: Geometric-Consistency Gate}
+
+From the stored raw correspondences we estimate a source$\to$target
+homography $H$ with seeded USAC\_MAGSAC \citep[5\,px
+threshold;][]{barath2020magsac} and define the inlier ratio $\rho$ as the
+fraction of raw correspondences consistent with $H$. If two images are
+re-editions of one exposure, the mapping between them is, to good
+approximation, a single planar projective transform---cropping, rescanning,
+rotation, and page geometry compose into one homography---so $\rho$ is
+high. Correspondences that scatter off a single homography indicate either
+scene-level similarity with parallax or unstable matching. The gate accepts
+pairs with $\rho \ge 0.65$, derived on the development shard and frozen
+thereafter. A deliberately lenient sanity pre-pass (finite, non-singular
+$H$; minimal correspondence, inlier, and warped-overlap requirements) skips
+the pose stage only for egregiously degenerate alignments, which are
+recorded as rejections.
+
+\subsection{Stage 4: Pose-Based Exposure-Identity Decision}
+
+The homography then serves a second purpose: the source is warped onto the
+target canvas, and the aligned pair is passed jointly to VGGT
+\citep{wang2025vggt} \todo{pin the exact VGGT checkpoint, commit hash, and
+inference resolution in the reproducibility checklist}, a feed-forward 3D
+foundation model that regresses for each frame a nine-dimensional camera
+encoding $[\mathbf{t}, \mathbf{q}, \mathbf{f}]$: translation
+$\mathbf{t}\in\mathbb{R}^3$ in the model's normalized scene units, an
+orientation quaternion $\mathbf{q}$, and vertical/horizontal field of view
+$\mathbf{f}\in\mathbb{R}^2$. From the two frames' encodings we take four
+deltas: the rotation angle
+$\delta_{\mathrm{rot}} = 2\arccos\lvert\langle\hat{\mathbf{q}}_s,
+\hat{\mathbf{q}}_t\rangle\rvert$ (unit-normalized quaternions; the absolute
+dot product resolves the $\mathbf{q}\equiv-\mathbf{q}$ ambiguity), the
+lateral shift $\delta_{xy} = \lVert\mathbf{t}^{(xy)}_s -
+\mathbf{t}^{(xy)}_t\rVert_2$, the depth shift $\delta_{z} = \lvert t^{(z)}_s
+- t^{(z)}_t\rvert$, and the zoom shift $\delta_{\mathrm{fov}} =
+\lVert\mathbf{f}_s - \mathbf{f}_t\rVert_2$. Each is scaled, capped, and
+weighted into a single score
+\begin{equation}
+S \;=\!\! \sum_{c\,\in\,\{\mathrm{rot},\,xy,\,z,\,\mathrm{fov}\}}\!\!
+w_c \,\min\!\left(\frac{\delta_c}{s_c},\, \gamma\right),
+\label{eq:pose-score}
+\end{equation}
+with weights $(w_{\mathrm{rot}}, w_{xy}, w_{z}, w_{\mathrm{fov}}) =
+(1, 1, 0.25, 0.25)$, scales $(s_{\mathrm{rot}}, s_{xy}, s_{z},
+s_{\mathrm{fov}}) = (2^{\circ}, 0.020, 0.100, 0.100)$, and per-term cap
+$\gamma = 3$. Here $\delta_{\mathrm{rot}}$ is converted to degrees before
+scaling, and the translation deltas are measured in VGGT's normalized scene
+units, so each ratio $\delta_c / s_c$ is dimensionless. The asymmetry is the
+design: re-orientation and lateral
+viewpoint change are physical evidence that the camera moved---a different
+exposure---whereas apparent zoom and depth shifts routinely arise from
+cropping, enlargement, and reproduction even in true copies, so those terms
+contribute weakly and saturate \todo{empirical justification: per-component
+violin/ROC plots of $\delta_{\mathrm{rot}}, \delta_{xy}, \delta_{z},
+\delta_{\mathrm{fov}}$ on exact-copy vs.\ same-scene labeled pairs (CPU,
+from \texttt{vggt\_judged\_manifest.jsonl}), Figure~\ref{fig:pose-components};
+component ablations rotation+xy-only vs.\ fov+z-only,
+Table~\ref{tab:verification} rows B4/B5}. A pair is declared the same
+exposure iff
+\begin{equation}
+\rho \ge 0.65 \;\;\wedge\;\; S \le 2.13,
+\label{eq:decision}
+\end{equation}
+both thresholds derived once on the development shard, frozen for all other
+data, and committed as named constants in the released code. VGGT's global
+register-token cosine similarity is recorded for every pair but is
+deliberately \emph{excluded} from the rule: its distributions on exact
+copies and same-scene negatives overlap heavily and a gate on it adds no
+separation---a negative finding we report as such
+\todo{Table~\ref{tab:verification}: global-similarity-gate baseline row B6
+(cosine $\ge 0.90$) plus the distribution-overlap figure, CPU from cached
+manifests}.
+
+\subsection{Why Pose Can Judge a Picture of a Picture}
+
+An objection must be met head-on: an aligned exact copy is a photograph of
+a photograph---planar, degenerate two-view geometry, far from the
+multi-view scenes a 3D foundation model is trained on. Can its pose
+estimates be trusted there? Our rule requires far less than trustworthy
+metric pose. After Stage-3 alignment, a true re-edition presents the model
+with two frames related by approximately the identity: every change that
+reproduction introduces is photometric or planar-projective, there is no
+parallax left to explain, and the pose head regresses near-coincident
+cameras---near-zero $\delta_{\mathrm{rot}}$ and $\delta_{xy}$. A same-scene
+negative---a second exposure taken steps away or moments later---cannot be
+flattened this way: no single homography accounts for a genuine viewpoint
+change of a non-planar scene, residual parallax survives alignment, and the
+pose head absorbs it as relative camera motion. The signal is the
+degeneracy itself: we use the pose head as a parallax detector, not a
+camera localizer. Crucially, the near-zero pose response on true copies is
+a measured behavior of the system, not an assumption \todo{synthetic
+battery: $\sim$200 verified exact-copy pairs under controlled crops,
+rotations, halftone simulation, and mild perspective warps; report the
+fraction of pose scores remaining $\le 2.13$ per transform type --- run
+W11} \todo{measured pose-score distributions per class on the labeled
+shards, referenced from the Experiments section}.
+
+\subsection{Design Alternatives}
+
+The pose stage is one of several ways to extract viewpoint evidence from
+signals the pipeline already computes, and we evaluate the alternatives
+under an identical protocol on the same candidate sets. Decomposing the
+Stage-3 homography yields a relative rotation and translation at no
+additional cost \citep{malis2007homography}; the same correspondences
+support an essential-matrix pose under assumed intrinsics
+\citep{nister2004fivepoint}; MASt3R \citep{leroy2024mast3r} provides an
+alternative learned pose head; and a small learned classifier over the
+recorded per-pair signals (correspondence counts, $\rho$, the four pose
+deltas, global similarity), in the spirit of Doppelgangers-style match
+verification \citep{cai2023doppelgangers}, replaces the hand-set rule with
+a fitted one. All four appear in Table~\ref{tab:verification}
+\todo{Table~\ref{tab:verification} rows B7 (homography-decomposition pose),
+B8 (essential-matrix pose), B9 (MASt3R pose, run W6), B10 (learned
+classifier); B7/B8/B10 are CPU-only from cached manifests} alongside the
+component and threshold ablations.
+
+\section{Experiments}
+\label{sec:evaluation}
+
+Our evaluation answers six questions, each with its own denominator:
+(1)~does the learned retrieval front-end outperform off-the-shelf
+copy-detection and self-supervised descriptors on photo-to-halftone
+retrieval (Table~\ref{tab:retrieval});
+(2)~does the inferred-pose gate improve exposure-identity vs.\ same-scene
+verification over cheaper geometric alternatives
+(Table~\ref{tab:verification});
+(3)~do the two hand-set thresholds sit on plateaus rather than spikes
+(Figure~\ref{fig:sensitivity});
+(4)~what fraction of known reproductions the full funnel recovers end to
+end (Table~\ref{tab:survival});
+(5)~does the frozen pipeline transfer to a second propaganda system; and
+(6)~does the system measurably change historians' work.
+
+\subsection{Protocol}
+\label{sec:protocol}
+
+\paragraph{Split roles.}
+The working corpus is partitioned into six shards by deterministic
+batching; three are labeled. \textbf{Shard~1 is the development set}: the
+inlier-ratio cutoff (0.65), the pose-score threshold (2.13), and the
+pose-component weighting itself were all derived here, and Shard-1 numbers
+should be read as development-set results. \textbf{Shard~2 is held-out
+validation}: it was evaluated once, with every parameter frozen, and never
+used for tuning. \textbf{Shard~3 is an untouched test set}, labeled under
+the written codebook of the Human Evaluation subsection and evaluated
+exactly once, with everything frozen \todo{single-shot Shard-3 evaluation
+(jobs W2/W3), scheduled after all thresholds and tables are locked}.
+Labeled pairs: Shard~1, 325 positive / 316 negative (641); Shard~2, 252
+positive / 386 negative (638); Shard~3 \todo{label counts after codebook
+annotation}. Pairs labeled \emph{Unsure} are excluded from these counts and
+reported as a first-class outcome, never silently dropped.
+
+\paragraph{Denominator discipline.}
+Every metric below names its denominator. \emph{Retrieval} Recall@$K$ and
+mAP are computed over the 2{,}636 verified photo--print pairs, with the full
+42{,}773-crop working corpus as distractors: they answer whether a true
+reproduction, when one exists, surfaces in the top-$K$ list.
+\emph{Verification} precision, recall, and F1 are \emph{conditional on the
+candidate set}: ground-truth labels exist for the candidate pairs that
+survive retrieval and the correspondence floor, and all metrics in
+Table~\ref{tab:verification} are computed over these expert-adjudicated
+pairs. We never quote a verification number as end-to-end performance.
+The paper's \emph{only} end-to-end claim is the survival analysis of
+Table~\ref{tab:survival}, whose denominator is again the 2{,}636 verified
+pairs.
+
+\paragraph{Statistics, seeds, compute.}
+Every P/R/F1 and PR-AUC cell carries a bootstrap 95\% confidence interval
+(10{,}000 resamples over pairs) \cite{efron1993bootstrap}
+\todo{add CIs to all table cells once rows complete}. Variants are
+compared to the full system with exact McNemar tests on paired per-pair
+decisions \cite{mcnemar1947}, Holm-corrected within each table
+\cite{holm1979}. The final representation model is retrained with three
+seeds (mean$\pm$std) \todo{3-seed retrain, job W12}; ablation variants use
+a single disclosed seed. All RANSAC estimation is seeded
+(\texttt{cv2.setRNGSeed} before every call; fundamental-matrix RANSAC at a
+1-pixel reprojection threshold) \cite{fischler1981ransac}, making the
+geometric stages bit-for-bit reproducible; a five-repeat seed check on
+Shard~1 confirms near-zero geometric-stage variance \todo{5-seed repeat
+numbers}. The fusion head is trained transductively (self-supervised, on
+the unlabeled evaluation corpus); a control retrain excluding all Shard-3
+images is reported in \todo{transductive control, Shard-3 F1 within CI ---
+run W9}. Experiments ran on \todo{GPU model(s), VRAM, total GPU-hours per
+experiment family}. The decision layer, with both thresholds as named
+constants, and scripts that regenerate every table from cached per-pair
+manifests, are part of the anonymized code in the supplementary material.
+
+\subsection{Retrieval: Candidate Proposal}
+
+Table~\ref{tab:retrieval} compares the retrieval front-end against frozen
+off-the-shelf descriptors under identical preprocessing, following the
+distractor-corpus protocol of the Image Similarity Challenge
+\cite{douze2021disc}. A GeM descriptor \cite{radenovic2019gem} represents
+the classical landmark/instance-retrieval family (GeM/DELG) alongside the
+copy-detection and foundation-model encoders. Two rows isolate our design
+choices: DINOv3-alone with the SSL head (does the three-backbone fusion
+beat its best member?) and fusion without SSL (does the SimCLR-style head
+\cite{chen2020simclr} matter?).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+& Encoder & R@1 & R@5 & R@10 & R@15 & mAP \\
+\midrule
+A1 & SSCD \cite{pizzi2022sscd} & \multicolumn{5}{c}{\todo{W4}} \\
+A2 & DINOv2 global \cite{oquab2024dinov2} & \multicolumn{5}{c}{\todo{W4}} \\
+A3 & DINOv3 global \cite{simeoni2025dinov3} & \multicolumn{5}{c}{\todo{W4}} \\
+A4 & CLIP / SigLIP~2 \cite{radford2021clip,tschannen2025siglip2} & \multicolumn{5}{c}{\todo{W4}} \\
+A5 & GeM \cite{radenovic2019gem} & \multicolumn{5}{c}{\todo{W4}} \\
+A6 & ViT ensemble \cite{du2024probing} & \multicolumn{5}{c}{\todo{W4}} \\
+A7 & Ours: fusion + SSL & \multicolumn{5}{c}{\todo{W4}} \\
+A8 & DINOv3-alone + SSL & \multicolumn{5}{c}{\todo{W9}} \\
+A9 & Fusion, no SSL & \multicolumn{5}{c}{\todo{W9}} \\
+\bottomrule
+\end{tabular}
+\caption{Retrieval over the 2{,}636 verified pairs with the 42{,}773-crop
+corpus as distractors. \todo{All cells: W4 = featurize the corpus with
+each frozen encoder and score Recall@$K$/mAP; W9 = retrain rows A8--A9
+(DINOv3-alone + SSL head; fusion without SSL). A6 uses the ensemble
+configuration of Du, Le, and Honig (2024), reimplemented from the
+published description (confirm weights are publicly released before
+claiming otherwise).}}
+\label{tab:retrieval}
+\end{table}
+
+\subsection{Verification: Exposure Identity vs.\ Same Scene}
+
+Table~\ref{tab:verification} is the paper's core table. All rows share
+the identical, fixed candidate sets described in the Protocol subsection,
+so differences are attributable to the decision rule alone; metrics are
+conditional on the candidate set throughout. Row~B0 is the
+accept-everything base rate, i.e.\ the class prior of the candidate set:
+precision 50.7 on Shard~1 and 39.5 on Shard~2 at recall 100. Row~B2
+(correspondence floor + inlier ratio, no pose) already reaches
+82.9~/~97.2~/~89.5 (P~/~R~/~F1) on Shard~1 and 83.7~/~100~/~91.1 on
+Shard~2. Adding the component-weighted pose gate (row~B3, the full
+system) removes 17 false positives at the cost of 3 true positives on
+Shard~1, and 22 false positives at the cost of 4 true positives on
+Shard~2, yielding 86.7~/~96.3~/~91.3 and 90.2~/~98.4~/~94.1. Because the
+pose gate only removes pairs from the inlier-gate survivors, the
+discordant-pair counts for B2 vs.\ B3 are fully determined, and the exact
+McNemar $p$-values are $2.6\times10^{-3}$ (Shard~1) and
+$5.3\times10^{-4}$ (Shard~2); Holm correction is applied across the full
+table once all rows are complete \todo{Holm-corrected $p$ column}.
+
+Three groups of rows probe the mechanism. \emph{Component rows} B4/B5
+split the pose score of Eq.~\ref{eq:pose-score} into its high-weight terms
+(rotation angle and
+$xy$-translation) and its low-weight terms (fov shift and
+$z$-translation); if the weighting is right, B5 should perform near
+chance, and the per-component score distributions
+(Figure~\ref{fig:pose-components}) should show the same asymmetry. Row~B6
+gates on the global feature-similarity signal that the pipeline records
+but \emph{excludes} from its decision rule owing to heavy between-class
+distribution overlap; B6 quantifies what a tuned gate on that signal would
+have achieved. \emph{Alternative-pose rows} B7--B9 answer the question a
+reader should ask: the alignment stage already estimates a homography, and
+decomposing it yields relative rotation and translation for free
+\cite{malis2007homography} (B7); an essential-matrix pose from the same
+correspondences is nearly as cheap \cite{nister2004fivepoint} (B8); and
+MASt3R \cite{leroy2024mast3r} is the strongest alternative feed-forward
+pose head (B9). Each is tuned on Shard~1 only and applied frozen, exactly
+as our gate was. Row~B10 replaces the hand-set thresholds with a learned
+classifier over the stored per-pair signals, in the spirit of
+Doppelgangers \cite{cai2023doppelgangers}. Rows B11--B14 perturb the
+geometry stage itself (alignment off; filtered vs.\ raw alignment
+correspondences; matcher swaps to LightGlue
+\cite{lindenberger2023lightglue} and RoMa \cite{edstedt2024roma}).
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.94\columnwidth}{\centering\vspace{1.5em}
+\todo{per-component violin/ROC plots of the four pose deltas on exact-copy
+vs.\ same-scene pairs, plus the global-similarity distribution-overlap
+panel; CPU from \texttt{vggt\_judged\_manifest.jsonl}}
+\vspace{1.5em}}}
+\caption{Per-component pose-delta distributions for exposure-identical
+vs.\ same-scene candidate pairs.}
+\label{fig:pose-components}
+\end{figure}
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+& & Shard 1 (dev) & Shard 2 (val) & Shard 3 (test) & PR-AUC & McNemar \\
+& Variant & P~/~R~/~F1 & P~/~R~/~F1 & P~/~R~/~F1 & (S2) & vs.\ B3 (S2) \\
+\midrule
+B0 & Accept-all (base rate) & 50.7 / 100 / 67.3 & 39.5 / 100 / 56.6 & \todo{S3} & --- & $<10^{-6}$ \\
+B1 & Correspondence floor only & \multicolumn{5}{l}{\todo{floor sweep 0--200 over \texttt{aspan\_all\_manifest} after breakpoint-0 rerun (W1); CPU}} \\
+B2 & + inlier-ratio gate (no pose) & 82.9 / 97.2 / 89.5 & 83.7 / 100 / 91.1 & \todo{S3} & \todo{sweep} & $5.3\times10^{-4}$ \\
+B3 & \textbf{+ weighted pose gate (full)} & \textbf{86.7 / 96.3 / 91.3} & \textbf{90.2 / 98.4 / 94.1} & \todo{S3} & \todo{sweep} & --- \\
+\midrule
+B4 & Pose: rotation + $xy$ terms only & \multicolumn{5}{l}{\todo{CPU re-scoring of cached manifests, \texttt{--pose-components rotation\_xy}}} \\
+B5 & Pose: fov + $z$ terms only & \multicolumn{5}{l}{\todo{CPU re-scoring, \texttt{--pose-components fov\_z}; expected near-chance}} \\
+B6 & Global-similarity gate & \multicolumn{5}{l}{\todo{threshold sweep on stored global-similarity signal; dev-tuned, frozen on S2/S3}} \\
+\midrule
+B7 & Homography-decomposition pose & \multicolumn{5}{l}{\todo{$R,t$ from \texttt{decomposeHomographyMat} on the cached alignment homographies; CPU}} \\
+B8 & Essential-matrix pose & \multicolumn{5}{l}{\todo{five-point + RANSAC on cached ASpanFormer correspondences; CPU}} \\
+B9 & MASt3R relative pose & \multicolumn{5}{l}{\todo{W6: MASt3R pose on all labeled pairs, same tune-on-S1 protocol}} \\
+B10 & Learned classifier (LR / MLP) & \multicolumn{5}{l}{\todo{logistic reg.\ + 2-layer MLP over stored signals (correspondence count, inlier ratio, pose deltas, global sim); train S1, frozen}} \\
+\midrule
+B11 & Alignment off & \multicolumn{5}{l}{\todo{W8: VGGT on unaligned crops}} \\
+B12 & Filtered alignment correspondences & \multicolumn{5}{l}{\todo{W8: raw vs.\ filtered correspondences for alignment}} \\
+B13 & Matcher swap: LightGlue & \multicolumn{5}{l}{\todo{W7: replace ASpanFormer; re-tune both thresholds on S1, frozen on S2/S3}} \\
+B14 & Matcher swap: RoMa & \multicolumn{5}{l}{\todo{W7: same protocol as B13}} \\
+\bottomrule
+\end{tabular}
+\caption{Verification conditional on the candidate set: the expert-labeled
+filter-survivor pairs of each shard (641 on Shard~1, 638 on Shard~2,
+\todo{$n$} on Shard~3). Thresholds and weights for every variant are tuned
+on Shard~1 only and applied frozen elsewhere. McNemar $p$-values are exact
+tests on paired decisions; Holm correction across the table
+\todo{apply once all rows are run}. Shard-3 column filled by the single
+frozen evaluation \todo{W2/W3}.}
+\label{tab:verification}
+\end{table*}
+
+\subsection{Threshold Sensitivity}
+
+Both operating constants of Eq.~\ref{eq:decision} are hand-set, so we show
+they lie on plateaus. Figure~\ref{fig:sensitivity} sweeps the inlier-ratio
+cutoff over $[0.30, 0.90]$ and plots F1 per shard with 0.65 marked
+(panel~a); gives full ROC and PR curves over the continuous pose score with
+the 2.13 operating point marked (panel~b); and shows a two-dimensional F1
+heatmap over (inlier ratio, pose score) on the development shard with the
+chosen operating point, replotted on the untouched test shard to show that
+the plateau, not just the point, transfers (panel~c). The frozen operating
+point was evaluated on Shard~3 exactly once, before any sweep; the Shard-3
+heatmap is a post-hoc robustness analysis computed after that single frozen
+evaluation, with no feedback into any reported operating point.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.94\columnwidth}{\centering\vspace{1.5em}
+\todo{sensitivity figure, three panels: (a) inlier-ratio sweep 0.30--0.90,
+F1 per shard, 0.65 marked; (b) ROC/PR over the continuous pose score, 2.13
+marked; (c) 2D F1 heatmap over (inlier ratio, pose score) on dev, replotted
+on Shard 3 --- CPU sweeps over cached manifests; panel (c) requires Shard-3
+manifests, W2/W3}
+\vspace{1.5em}}}
+\caption{Threshold sensitivity of the two frozen operating constants.}
+\label{fig:sensitivity}
+\end{figure}
+
+\subsection{End-to-End Survival of Verified Pairs}
+
+Verification metrics above say nothing about pairs the funnel never
+surfaces. Table~\ref{tab:survival} therefore pushes all 2{,}636 verified
+pairs through every stage at frozen thresholds and reports the fraction
+still alive after each. This survival table is the paper's only
+end-to-end claim, and its final row answers the historian's operative
+question: \emph{of the reproductions known to exist, how many does the
+system find?}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Stage & Pairs alive & \% of 2,636 \\
+\midrule
+All verified pairs & 2,636 & 100.0 \\
+Retrieval top-10 & \todo{W5} & \todo{W5} \\
++ correspondence floor & \todo{W5} & \todo{W5} \\
++ inlier ratio $\geq 0.65$ & \todo{W5} & \todo{W5} \\
++ pose score $\leq 2.13$ (end-to-end) & \todo{W5} & \todo{W5} \\
+\bottomrule
+\end{tabular}
+\caption{Stage-by-stage survival of the 2{,}636 verified photo--print
+pairs at frozen thresholds \todo{W5: end-to-end recall audit; also report
+which stage dominates the loss}.}
+\label{tab:survival}
+\end{table}
+
+\subsection{Cross-Propaganda-System Transfer}
+
+To test whether the pipeline and its thresholds encode anything specific
+to one publication apparatus, we freeze everything --- weights,
+thresholds, correspondence floor --- and run the identical system on the
+Jinchaji Pictorial materials from the Papers of Sha Fei (2{,}146
+photographs, 1{,}122 magazine pages, 4{,}390 crops, 230 annotated pairs):
+Communist base-area propaganda, produced under different printing
+technology and degradation than the Japanese-run \emph{North China}
+corpus, and studied previously by \citet{du2024probing}, whose system
+reached 77.8\% top-15 retrieval on this collection. We report Recall@10/15
+against that reference \todo{W10: frozen-pipeline Jinchaji run} and
+verification P/R/F1, conditional on the candidate set, on hand-labeled
+filter survivors \todo{Jinchaji survivor labeling under the same
+codebook}. For this collection the supplementary release contains
+annotations and image identifiers only; the images themselves are not
+redistributed.
+
+\subsection{Human Evaluation}
+\label{sec:human}
+
+\paragraph{Annotation reliability.}
+NCR-Match itself was built under the two-round verification protocol
+described in Dataset Construction, whose second round excluded same-scene
+negatives --- precisely the confusion the verification stage exists to
+resolve. For the shard labels used in
+Table~\ref{tab:verification}, a written one-page codebook fixes the
+contested cases (adjacent contact-sheet frames; crops of a same-scene
+negative), after which two annotators --- a domain-expert historian of the
+period and a trained research assistant --- independently label all
+candidate pairs as positive, negative, or \emph{Unsure}, without access
+to each other's answers. We report Cohen's $\kappa$ \cite{cohen1960kappa}
+\todo{$\kappa$ per shard from the dual relabeling}, per-shard
+\emph{Unsure} counts \todo{counts}, and adjudicate disagreements into the
+gold labels used throughout.
+
+\paragraph{Historian time-saved study.}
+We run a within-subjects study with 4--6 historians and graduate students
+of the period \todo{final $N$ and recruitment description}. Each
+participant works through two matched query sets of archival photographs
+\todo{query-set size and matching procedure} under two conditions:
+(A)~the full system --- pipeline-verified candidates with aligned overlay
+visualizations --- and (B)~a plain top-10 retrieval list. Condition order
+and query-set assignment are counterbalanced across participants. We
+measure time-to-first-verified-republication (elapsed time until the
+participant confirms a true republication of a query photograph) and
+verified matches per 30-minute session. Because a participant-level
+two-sided Wilcoxon signed-rank test \cite{wilcoxon1945} cannot reach
+$p<0.05$ at this sample size (the minimum attainable $p$ is $0.125$ at
+$N{=}4$ and $0.0625$ at $N{=}5$), the study is presented descriptively:
+per-condition session medians, the direction of the paired difference
+for every participant, and rank-biserial effect sizes, with sessions as
+the named denominator and no hypothesis-test claim \todo{all results;
+sessions scheduled}.
+
+\subsection{Qualitative Analysis and Failure Modes}
+
+Figure~\ref{fig:hard-cases} shows hard positives the system accepts
+(heavy crops, coarse halftone screening, retouched reprints) alongside
+hard negatives it rejects (same scene, exposures seconds apart), and
+representative residual errors \todo{figure from adjudicated Shard-2
+errors: 27 FP, 4 FN}. We additionally tag every confirmed positive with a
+manipulation-trace type --- halftone-only, crop, rotation/mirror,
+retouch, recaption-with-near-identical-pixels \cite{du2026evidence} ---
+and report per-type pipeline pass rates \todo{taxonomy tagging of
+confirmed positives; per-type survival}. One trace class is invisible to
+this system by construction: recaption-only reuse, in which the printed
+image is pixel-wise near-identical and only the surrounding caption
+changes. The pipeline correctly verifies such pairs as the same exposure
+--- that is its function --- but it cannot detect the caption
+substitution itself. Detecting textual and layout-level traces around a
+verified image pair is future work; the image-level verdicts reported
+here are the evidentiary substrate such a system would require.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.94\columnwidth}{\centering\vspace{1.5em}
+\todo{hard positives accepted (heavy crops, coarse halftone, retouch) vs.\
+hard same-scene negatives rejected, plus representative residual errors
+from the adjudicated Shard-2 error set (27 FP, 4 FN)}
+\vspace{1.5em}}}
+\caption{Hard cases and residual failure modes.}
+\label{fig:hard-cases}
+\end{figure}
+
+\section{Findings for Historians}
+\label{sec:findings}
+
+The pipeline's product is not historical knowledge; it is a queue of
+adjudicated photo--print pairs, each carrying its geometric evidence
+(retrieval rank, inlier ratio, pose score, aligned overlay) and its
+provenance metadata (publication, issue, date, page). It uses scale to
+locate the singular object; the close reading of that object remains
+the historian's work \cite{du2026evidence}. Findings of this kind have
+precedent at proof-of-concept scale: \citet{du2024probing}
+established the misattributed and mislocated Xifengkou/Futuyu
+photograph and the four-printing recaptioning chain of Liu Hanxing's
+enlistment portrait, and Du \citeyearpar{du2025metaphor} developed
+their historiographic implications. We report here what the scaled
+system adds: discoveries from the 42{,}773-crop working corpus that are,
+to our knowledge, previously undocumented in the scholarship on either
+archive, surfaced by the pipeline and adjudicated by a domain
+historian.
+
+\paragraph{Finding 1 (a new version chain).}
+\todo{Insert a NEW version chain from the adjudicated accepted-pair
+list: one North China Railway Archive photograph (give the archive
+identifier) reproduced in two or more magazine placements with
+materially different captions or layouts. Required elements: full
+provenance line for every printing (publication = North China
+(Hokushi), issue number, date, page); caption transcription and
+translation; per-pair pipeline evidence (retrieval rank, inlier ratio,
+pose score); one aligned-overlay figure. Must NOT be the
+Xifengkou/Futuyu or Liu Hanxing cases (already published --- cited
+above as prior findings). Source: domain-expert adjudication of the
+Shard 1--3 accepted pairs, scheduled Jul 16--21.}
+
+\paragraph{Finding 2 (a caption discrepancy or misattribution).}
+\todo{Insert a NEW discrepancy between the archive's own metadata and
+the printed caption (place, date, subject, or photographer credit),
+with the same provenance-line and evidence requirements as Finding 1.
+State the discrepancy only; assert no editorial intent --- intent is
+the historian's argument, made elsewhere.}
+
+\paragraph{Finding 3 (optional; an editorial crop or retouch).}
+\todo{Insert only if adjudication yields it: a crop or retouch that
+changes the legible content of the printed image (e.g., a person or
+object removed by the crop), same evidence requirements. This slot is
+cut first if space is short.}
+
+These findings cost the historian hours, not months:
+\todo{one sentence with the measured result of the within-subjects
+historian study --- time-to-first-verified-republication and verified
+matches per 30-minute session, pipeline-verified candidates with
+overlays (condition A) vs.\ plain top-10 retrieval (condition B),
+N=4--6 historians, 20--30 queries each; report medians and the paired
+direction; denominator = sessions. Study of report section 6.6, sessions
+Jul 16--21.}
+
+\section{Ethics, Positionality, and Broader Impact}
+\label{sec:ethics}
+
+\paragraph{Two propaganda systems, one instrument.}
+Both corpora are propaganda. The North China Railway Archive
+photographs were produced by the press apparatus of a Japanese
+corporate--military enterprise under occupation (1939--1945); the
+Jinchaji material was produced by the Chinese Communist Party's
+base-area pictorial unit, founded by the photographer Sha Fei. We
+treat the two systems even-handedly, as parallel objects of forensic
+description: the identical pipeline with identical frozen thresholds
+is applied to both, and the paper makes no claim about the relative
+truthfulness of either system. What it documents is a shared
+mechanism --- the movement of photographs into recontextualized
+print --- that both apparatuses operated.
+
+\paragraph{Depicted persons and name restoration.}
+The photographs show identifiable people living under occupation and
+at war. Where circulation evidence shows an attribution was erased in
+reprinting --- a photographer's credit dropped, a named subject
+reduced to ``common people'' \cite{du2024probing} --- we follow a
+name-restoration principle: re-attaching the documented name to the
+image is archival justice and is stated as fact; any claim about
+\emph{why} the name was removed is interpretation and is deferred to
+historians.
+
+\paragraph{The over-assertion risk.}
+The system's core output --- ``these two images are the same
+exposure'' --- is exactly the claim that, made falsely, launders a
+misattribution into the scholarly record with a machine's authority.
+Three design consequences follow. Decision thresholds are set
+conservatively; every accepted pair is human-adjudicated before any
+historical claim is made (verification precision, conditional on the
+expert-labeled candidate set, is 90.2\% on the held-out validation
+shard --- roughly one accepted pair in ten is wrong before
+adjudication, which is why adjudication is not optional); and coverage
+is reported as a per-stage survival table
+(Table~\ref{tab:survival}, \todo{numbers from the end-to-end audit
+over the 2{,}636 verified pairs, job W5}) rather than implied to be
+complete.
+
+\paragraph{Dual use.}
+Nothing in the pose signal is specific to archives: a method that
+separates copies from re-shots of the same scene transfers to
+contemporary copy detection, misinformation triage, and copyright
+enforcement, and, like all instance-matching technology, could serve
+surveillance-adjacent uses. We release only archival material and
+annotations, and we state the technique's generality rather than
+leaving it implicit.
+
+\paragraph{Dataset duties and licensing.}
+The release ships with a datasheet \cite{gebru2021datasheets} that
+records collection provenance, the two-round verification protocol,
+and --- centrally --- the archive's own selection bias: the North
+China Railway Archive is itself a curated product of the occupation
+press apparatus, and what it omits is a property of the source that
+the benchmark inherits; the benchmark measures matching, not
+representativeness. North China Railway Archive images and metadata
+are published under CC~BY~4.0 and are redistributed with attribution
+to the archive \cite{ncrarchive2019}; for the Jinchaji side we release
+annotations and image identifiers only, no images.
+
+\paragraph{Design policy.}
+The Introduction's design principle --- retrieval without
+interpretation --- is implemented as policy, not aspiration: no output
+field of the system asserts editorial intent, and no intent language
+appears in the released annotations. Interpretation is reserved for
+the historian, whose findings appear --- so labeled --- in the
+preceding section.
+
+\section{Limitations}
+\label{sec:limitations}
+
+\textbf{Image-only blindness.} The pipeline decides on pixels, and the
+historically decisive manipulation is often textual: a recaption-only
+reprint is correctly matched as the same exposure, but the discrepancy
+that matters is invisible to the matcher, so caption changes are still
+found only by reading every adjudicated pair.
+\todo{Per-trace-type pipeline pass rates from the taxonomy tagging of
+confirmed positives (halftone-only, crop, rotation/mirror, retouch,
+recaption) --- quantifies exactly which manipulation classes the
+image-only system cannot see.}
+\textbf{Conditional metrics.} Verification P/R/F1 are conditional on
+the candidate set; the survival table is the paper's only end-to-end
+claim, and \todo{end-to-end survival numbers, audit W5} bound what a
+historian ultimately misses.
+\textbf{Transductive training.} The fusion head is trained
+self-supervised on the full unlabeled working corpus, which includes
+the evaluation images (no labels are used).
+\todo{Control: retrain excluding Shard-3 images and show Shard-3 F1
+unchanged within CI (report section 6.8, run W9); otherwise disclose as
+an uncontrolled limitation.}
+\textbf{Annotation reliability.} The shard labels originate from a
+single annotation pass;
+\todo{Cohen's kappa from the independent dual-annotation under the
+written codebook, with disagreements adjudicated into gold labels and
+Unsure as a first-class category.}
+\textbf{Degenerate geometry by design.} An aligned exact copy is a
+picture of a picture --- near-planar, near-zero baseline --- outside
+the training distribution of a 3D reconstruction model, and the
+near-zero inferred pose shift on true copies is a measured behavior,
+\todo{synthetic battery: pose-score distributions under controlled
+crops, rotations, halftone simulation, and mild perspective warps on
+$\sim$200 exact-copy pairs (report section 6.5, job W11)}, not a
+guaranteed property; it is validated for one pinned checkpoint only.
+\textbf{Upstream crop dependency.} Every stage consumes YOLOv11 layout
+crops \cite{khanam2024yolov11}; detection and crop-boundary errors
+propagate silently.
+\todo{Crop-stage QC: detection precision/recall on a 100-page audited
+sample, plus one sentence on failure handling.}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We posed provenance verification for archival photographs as a
+question the copy-detection literature names but does not decide with
+geometry: same photograph, or same scene? Our contributions mirror
+that framing. We formulated exposure-identity vs.\ same-scene
+discrimination on cross-domain photo-to-halftone material and, to our
+knowledge, are the first to decide it using the relative camera pose
+inferred by a 3D foundation model, wrapped in a conservative,
+auditable decision layer. We release NCR-Match --- 2{,}636 verified
+photo--print pairs with exposure-identity and same-scene-negative
+labels, with datasheet and code --- deposited, not promised. With
+thresholds frozen on the development shard, the verifier reaches
+P~90.2 / R~98.4 / F1~94.1 on held-out validation, conditional on the
+candidate set (\todo{Shard-3 test row, one-shot frozen evaluation of
+Jul 22}), and \todo{the Hokushi$\rightarrow$Jinchaji cross-system
+transfer result, frozen thresholds, report section 6.7} carries the same
+protocol across opposing propaganda systems. The findings of the
+preceding section --- surfaced by the pipeline, adjudicated by a
+historian --- are the intended unit of return. The pipeline retrieves;
+the argument belongs to the historian.
+
+\bibliography{refs}
+
+% =============================================================================
+% REPRODUCIBILITY CHECKLIST --- draft answers (trailing comment block).
+% AAAI-27 mechanics: the kit's ReproducibilityChecklist.tex is dual-mode; it
+% compiles standalone or is \input at the end of the paper before
+% \end{document}. Answer by editing its 31 \question{...}{(yes/partial/no)}
+% items. When ready:  % \input{authorkit/AuthorKit27/ReproducibilityChecklist}
+% Draft answers below; items marked [contingent] flip to partial/no if the
+% referenced \todo does not land in the July 31 supplementary.
+%
+% 1. GENERAL PAPER STRUCTURE
+%   1.1 Conceptual outline/pseudocode of AI methods: YES (four-stage pipeline
+%       description; decision rules stated with named constants).
+%   1.2 Opinions/hypotheses delineated from facts: YES.
+%   1.3 Pedagogical references for less-familiar readers: YES.
+% 2. THEORETICAL CONTRIBUTIONS
+%   2.1 Theoretical contributions: NO (2.2--2.8: NA).
+% 3. DATASET USAGE
+%   3.1 Relies on datasets: YES.
+%   3.2 Motivation for selected datasets: YES.
+%   3.3 Novel datasets included in a data appendix: YES [contingent on the
+%       NCR-Match deposit shipping and kappa/gold-label adjudication
+%       completing so the released labels are the adjudicated ones].
+%   3.4 Novel datasets publicly available with a research license: YES ---
+%       NCR side CC BY 4.0 with attribution; Jinchaji side annotations and
+%       identifiers only [TODO: fix annotation license string].
+%   3.5 Existing datasets cited: YES (NCR Archive; Jinchaji/Sha Fei materials
+%       via Du, Le, and Honig 2024).
+%   3.6 Existing datasets publicly available: PARTIAL --- NCR Archive is
+%       public (CC BY 4.0); Papers of Sha Fei / Jinchaji Pictorial images are
+%       not redistributable.
+%   3.7 Non-public datasets described in detail with justification: YES.
+% 4. COMPUTATIONAL EXPERIMENTS
+%   4.1 Includes computational experiments: YES.
+%   4.2 Hyperparameter ranges and selection criterion: PARTIAL --- 0.65/2.13
+%       derived on Shard 1 (dev) and disclosed as such; becomes YES once the
+%       sensitivity curves (inlier 0.30--0.90; pose ROC/PR; top-K 5--15) land.
+%   4.3 Preprocessing code included: PARTIAL --- retrieval/filter/judge/
+%       scoring code complete; [TODO: package YOLOv11 crop weights + training
+%       annotations in the supplementary, else answer NO and disclose].
+%   4.4 All experiment source code included: YES (anonymized code in
+%       supplementary material).
+%   4.5 Code publicly available with research license: YES [TODO: choose
+%       repo license, e.g. MIT/Apache-2.0].
+%   4.6 Code commented with references to paper steps: YES (per-step
+%       docstrings; paper constants named in the decision layer).
+%   4.7 Random seeds described sufficiently: PARTIAL --- geometric stage is
+%       seeded (cv2 RANSAC, bit-for-bit); becomes YES after committing
+%       torch/numpy/DataLoader seeding and the frozen-backbone eval-mode fix
+%       (report section 6.0 item 3).
+%   4.8 Computing infrastructure specified: PARTIAL --- becomes YES once the
+%       compute paragraph (GPU types/hours, memory, OS, pinned library
+%       versions from the environment file) is written.
+%   4.9 Metrics formally described and motivated: YES (every metric names
+%       its denominator: Recall@K over verified pairs; verification P/R/F1
+%       conditional on the candidate set; end-to-end survival table).
+%   4.10 Number of runs per result stated: YES --- single-seed ablations
+%        disclosed; [contingent: 3-seed final model mean+-std (job W12),
+%        else state 1 seed explicitly].
+%   4.11 Analysis beyond point estimates: YES [contingent: bootstrap 95% CIs,
+%        10,000 resamples over pairs, on every P/R/F1 cell].
+%   4.12 Significance tests: YES [contingent: McNemar exact tests vs. full
+%        pipeline, Holm-corrected].
+%   4.13 All final hyperparameters listed: YES.
+%
+% Items whose answer depends on a \todo landing before July 31:
+%   3.3, 3.4, 4.2, 4.3, 4.5, 4.7, 4.8, 4.10, 4.11, 4.12.
+% =============================================================================
+
+\end{document}
