@@ -1,0 +1,23 @@
+# Local data, manifests, and private evaluation scripts — never commit
+_local/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Common
+.DS_Store
+Thumbs.db
+*.log
+
+# Large data / zips
+*.zip
