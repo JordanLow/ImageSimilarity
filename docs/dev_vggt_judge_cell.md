@@ -1,6 +1,6 @@
 # Dev notebook VGGT-Omega judge cell
 
-Paste these constants into the top config cell of `dev.ipynb`, then paste the run cell below immediately after the `aspanfilter.py` cell.
+Paste these constants into the top config cell of `main.ipynb`, then paste the run cell below immediately after the `geometry_filter.py` cell.
 
 The judge consumes `ASPAN_OUTPUT_DIR / 'vggt_candidates_manifest.jsonl'`; it does **not** rerun ASpanFormer. It runs VGGT-Omega only on ASpan-passed candidate pairs and writes both an all-judged manifest and a true-match-only manifest.
 
@@ -9,7 +9,7 @@ The judge consumes `ASPAN_OUTPUT_DIR / 'vggt_candidates_manifest.jsonl'`; it doe
 ```python
 # VGGT-Omega judging stage. This starts from aspanfilter.py outputs; it does not rerun ASpanFormer.
 RUN_VGGT_JUDGE = True
-VGGT_JUDGE_SCRIPT = DRIVE_ROOT / 'vggt_judge.py'
+VGGT_JUDGE_SCRIPT = DRIVE_ROOT / 'vggt_signals.py'
 VGGT_OMEGA_CHECKPOINT_DRIVE = DRIVE_ROOT / 'weights/VGGT-Omega/vggt_omega_1b_512.pt'
 VGGT_OMEGA_CHECKPOINT_LOCAL = LOCAL_ROOT / 'vggt_omega_1b_512.pt'
 VGGT_OUTPUT_DIR = LOCAL_ROOT / 'vggt_output'
@@ -76,9 +76,12 @@ else:
 
 ## Decision rule
 
-A candidate is emitted to `true_matches_manifest.jsonl` only when:
+`vggt_signals.py` (Step 3) records all signals into `vggt_judged_manifest.jsonl`
+and emits a provisional `true_match` based on its internal default thresholds.
 
-- `global_similarity >= VGGT_GLOBAL_SIM_THRESHOLD`, and
-- `pose_shift_total <= VGGT_POSE_SHIFT_THRESHOLD`.
+**The paper's actual decision rule is applied by `pose_scoring.py` (Step 4)**:
+- `aspan_2d_inlier_ratio >= 0.65` (Filter 2)
+- `pose_component_score <= 2.13` (Filter 3)
 
-Rows rejected by either test remain in `vggt_judged_manifest.jsonl` for audit/tuning. The old Tier-2 structural/depth anomaly mask is deliberately not used.
+Run `pose_scoring.py` on `vggt_judged_manifest.jsonl` to get the final
+`pose_scored_manifest.jsonl` used for the paper's P/R/F1 numbers.
