@@ -59,11 +59,14 @@ Re-editions of one exposure behave as pictures of a picture and yield
 near-zero inferred pose displacement; same-scene negatives do not. With all
 thresholds frozen on a development shard, the pose gate raises held-out
 verification precision from 83.7\% (at 100\% recall) to 90.2\% at 98.4\%
-recall, conditional on the candidate set. We release NCR-Match, 2{,}636
-expert-verified photograph--print pairs with exposure-identity versus
-same-scene labels drawn from the North China Railway Archive, a CC~BY~4.0
-occupation-era collection, and evaluate cross-system transfer to an opposing
-propaganda apparatus and historian-in-the-loop utility.
+recall, conditional on the candidate set. We release NCR-Match, an
+expert-adjudicated benchmark of candidate photograph--print pairs with
+exposure-identity versus same-scene labels --- 577 confirmed same-exposure
+pairs and 702 same-scene negatives at submission time, growing as further
+shards are labeled \todo{final counts after the Shard 3--6 campaigns} ---
+drawn from the North China Railway Archive, a CC~BY~4.0 occupation-era
+collection, and evaluate cross-system transfer to an opposing propaganda
+apparatus and historian-in-the-loop utility.
 \end{abstract}
 
 \section{Introduction}
@@ -189,12 +192,14 @@ contributes $+6.5$ points of precision over inlier-ratio verification alone
   inputs \todo{remaining Table~\ref{tab:verification} rows: B8
   (essential-matrix pose), B9 (MASt3R, run W6), B11--B14 (alignment and
   matcher perturbations, runs W7/W8), plus all Shard-3 columns}.
-\item \textbf{Benchmark.} NCR-Match: 2{,}636 verified
-  photograph--print pairs linking the North China Railway Archive
+\item \textbf{Benchmark.} NCR-Match: an expert-adjudicated benchmark of
+  candidate photograph--print pairs linking the North China Railway Archive
   ($\sim$39{,}000 photographs, 1939--1945) to the magazine \emph{North China}
-  (1939--1943), embedded in a working corpus of 42{,}773 cropped images,
-  curated with a two-round verification protocol in which same-scene
-  near-misses are excluded as labeled hard negatives. Archive images and
+  (1939--1943), embedded in a working corpus of 42{,}773 cropped images.
+  Every pair carries an exposure-identity label (same exposure / same-scene
+  negative / Unsure) assigned under a written codebook: 1{,}279 labeled
+  pairs at submission time (577 positive, 702 negative), growing as further
+  shards are labeled \todo{Shard 3--6 counts}. Archive images and
   metadata are CC~BY~4.0, so the benchmark is deposited with this submission
   with attribution to the archive. To our knowledge it is the first public
   benchmark with exposure-identity versus same-scene labels on cross-domain
@@ -460,10 +465,9 @@ Archive photographs (NCR Archive, 1939--1945) & $\sim$39{,}000 \\
 \emph{North China} magazine issues (1939--1943) & \todo{issue count} \\
 Working corpus (YOLOv11 crops, both collections) & 42{,}773 \\
 \midrule
-\multicolumn{2}{@{}l}{\emph{Exposure-identity verification (two rounds)}}\\
-First-round candidate pairs & \todo{count} \\
-Excluded in round two as same-scene & \todo{count} ($\sim$7\%) \\
-Verified pairs (NCR-Match) & 2{,}636 \\
+\multicolumn{2}{@{}l}{\emph{Expert-labeled benchmark (NCR-Match)}}\\
+Labeled candidate pairs at submission & 1{,}279 (+ Shard 3--6 \todo{counts}) \\
+\quad confirmed same-exposure / same-scene neg. & 577\,/\,702 \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Labeled candidate pairs (pos.\,/\,neg.\,/\,Unsure)}}\\
 Shard 1 (development) & 325\,/\,316\,/\,2 \\
@@ -476,11 +480,10 @@ Photographs\,/\,magazine pages & 2{,}146\,/\,1{,}122 \\
 Crops\,/\,annotated pairs & 4{,}390\,/\,230 \\
 \bottomrule
 \end{tabular}
-\caption{NCR-Match at a glance. Verification labels exist for candidate pairs
-that survive retrieval and the correspondence floor; verification metrics are
-therefore conditional on the candidate set (see Experiments), and end-to-end
-recall is reported separately as a survival analysis over the 2{,}636
-verified pairs.}
+\caption{NCR-Match at a glance. Labels exist for candidate pairs
+that survive retrieval and the correspondence floor; all verification metrics
+are therefore conditional on the candidate set (see Experiments), and the
+survival analysis is likewise scoped to the expert-labeled pairs.}
 \label{tab:dataset}
 \end{table}
 
@@ -499,18 +502,20 @@ corpus comprises 42{,}773 cropped images across the two collections;
 crop-stage quality is \todo{detection precision/recall on a 100-page manually
 audited sample --- YOLOv11 QC audit}.
 
-\textbf{Two-round verification.} Candidate photo--print pairs were proposed
-by embedding retrieval with geometric matching over the working corpus
-(\todo{first-round candidate-pair count}) and verified by hand in two rounds:
-round one screened candidates for visual identity; round two re-examined
-every accepted pair specifically for the same-scene failure mode. About 7\%
-of first-round candidates were identified in round two as same-scene
-negatives and excluded, leaving 2{,}636 verified exposure-identity pairs,
-each carrying magazine issue, date, and page metadata. The exclusion rate is
-itself evidence for the task: even under careful single-pass review, roughly
-one accepted candidate in fourteen was a different exposure of the same
-scene. The excluded pairs are retained as labeled same-scene hard negatives
-(\todo{confirm the round-two exclusion list ships in the release}).
+\textbf{Candidate generation and expert labeling.} Candidate photo--print
+pairs are proposed by embedding retrieval (top-10 per source photograph)
+followed by the correspondence floor, which reduces roughly 70{,}000
+candidate pairs per shard to $\sim$640 requiring expert eyes. Every
+surviving candidate is then labeled by hand as \emph{same exposure},
+\emph{same-scene negative}, or \emph{Unsure}, under a written codebook that
+fixes the genuinely contested cases (adjacent contact-sheet frames; crops of
+a same-scene negative). Each labeled pair carries magazine issue, date, and
+page metadata. The label composition is itself evidence for the task:
+49\%\,/\,61\% of retrieved-and-geometrically-plausible candidates on the two
+labeled shards are \emph{not} the same exposure --- look-alikes dominate the
+candidate space, which is precisely why a dedicated exposure-identity
+decision is needed. Confirmed same-scene negatives are released alongside
+the positives --- they are the benchmark's hard-negative class.
 
 \textbf{Labeled verification shards.} For threshold development and testing,
 the working corpus is deterministically partitioned into six shards of
@@ -551,7 +556,8 @@ $\kappa$ over the dual, independently labeled Shard 1--3 candidate pairs
 ($\approx$1{,}950), from the relabeling campaign}. Every verified positive
 additionally carries a trace type---halftone-only, crop, rotation/mirror,
 retouch, or recaption---with distribution \todo{trace-type distribution over
-the 2{,}636 verified positives, expert taxonomy tagging}; per-type pipeline
+the 577 confirmed positives (extend as further shards are labeled), expert
+taxonomy tagging}; per-type pipeline
 pass rates appear in the Experiments section. The recaption class---
 near-identical pixels under a changed caption---is detectable as an image
 match, but its editorial significance is invisible to an image-only system
@@ -566,7 +572,7 @@ North China Railway Archive publishes its photographs and metadata under
 CC~BY~4.0, and the release attributes all NCR imagery to the archive
 accordingly. For the Jinchaji domain we release annotations and image
 identifiers only, no image data. A datasheet \cite{gebru2021datasheets}
-documents collection, the two-round verification protocol, annotation, and
+documents collection, the labeling codebook and adjudication protocol, and
 known biases. Chief among these: the source archive is the product of
 Japanese corporate and military photography---it records what an occupation
 apparatus chose to photograph---so both subject matter and the trace-type
@@ -583,7 +589,7 @@ of wartime photography (see Ethics).
 \todo{pipeline figure: four-stage funnel with one photo--print pair as
 running example (archival photograph, retrieved print crop, ASpanFormer
 correspondences, homography-aligned overlay, VGGT pose deltas), annotated
-with per-stage survivor counts from the survival audit (W5/W11)}
+with per-stage survivor counts from the labeled-shard survival analysis}
 \vspace{2em}}}
 \caption{Overview of the four-stage verification funnel.}
 \label{fig:pipeline}
@@ -813,18 +819,22 @@ annotation}. Pairs labeled \emph{Unsure} are excluded from these counts and
 reported as a first-class outcome, never silently dropped.
 
 \paragraph{Denominator discipline.}
-Every metric below names its denominator. \emph{Retrieval} Recall@$K$ and
-mAP are computed over the 2{,}636 verified photo--print pairs, with the full
-42{,}773-crop working corpus as distractors: they answer whether a true
-reproduction, when one exists, surfaces in the top-$K$ list.
-\emph{Verification} precision, recall, and F1 are \emph{conditional on the
-candidate set}: ground-truth labels exist for the candidate pairs that
-survive retrieval and the correspondence floor, and all metrics in
+Every metric below names its denominator. \emph{Retrieval-stage} comparisons
+are scoped to the 577 expert-confirmed positive pairs and carry a printed
+caveat: those pairs were \emph{discovered through} this pipeline's own
+retrieval, so any retrieval statistic over them is biased in our encoder's
+favor; we use them only to compare encoders against one another, never as an
+archive-level recall claim. Full-archive recall is not reported by design:
+measuring it would require already knowing every true pair in a
+$\sim$39{,}000-photograph archive, which is the problem the system exists to
+address. \emph{Verification} precision, recall, and F1 are \emph{conditional
+on the candidate set}: ground-truth labels exist for the candidate pairs
+that survive retrieval and the correspondence floor, and all metrics in
 Table~\ref{tab:verification} are computed over these expert-adjudicated
-pairs. We never quote a verification number as end-to-end performance.
-The paper's \emph{only} end-to-end claim is the survival analysis of
-Table~\ref{tab:survival}, whose denominator is again the 2{,}636 verified
-pairs.
+pairs. We never quote a verification number as end-to-end performance. The
+paper's strongest end-to-end statement is the survival analysis of
+Table~\ref{tab:survival}, whose denominator is the expert-confirmed
+positives of the labeled shards.
 
 \paragraph{Statistics, seeds, compute.}
 Every P/R/F1 and PR-AUC cell carries a bootstrap 95\% confidence interval
@@ -850,14 +860,22 @@ manifests, are part of the anonymized code in the supplementary material.
 \subsection{Retrieval: Candidate Proposal}
 
 Table~\ref{tab:retrieval} compares the retrieval front-end against frozen
-off-the-shelf descriptors under identical preprocessing, following the
-distractor-corpus protocol of the Image Similarity Challenge
-\cite{douze2021disc}. A GeM descriptor \cite{radenovic2019gem} represents
-the classical landmark/instance-retrieval family (GeM/DELG) alongside the
-copy-detection and foundation-model encoders. Two rows isolate our design
-choices: DINOv3-alone with the SSL head (does the three-backbone fusion
-beat its best member?) and fusion without SSL (does the SimCLR-style head
-\cite{chen2020simclr} matter?).
+off-the-shelf descriptors under identical preprocessing, in the spirit of
+the distractor-corpus protocol of the Image Similarity Challenge
+\cite{douze2021disc}, scoped to the 577 expert-confirmed positives with the
+discovery-bias caveat of the Protocol subsection printed alongside. A GeM
+descriptor \cite{radenovic2019gem} represents the classical
+landmark/instance-retrieval family (GeM/DELG) alongside the copy-detection
+and foundation-model encoders. Two rows isolate our design choices:
+DINOv3-alone with the SSL head (does the three-backbone fusion beat its
+best member?) and fusion without SSL (does the SimCLR-style head
+\cite{chen2020simclr} matter?). Because an alternative encoder may surface
+candidate pairs our own retrieval never proposed, every \emph{new}
+candidate that survives the frozen decision gates is forwarded to the
+domain expert for adjudication and added to the released labels with its
+provenance recorded \todo{counts of newly surfaced candidates per encoder
+and their adjudicated outcomes --- this both audits our encoder's blind
+spots and grows the benchmark}.
 
 \begin{table}[t]
 \centering
@@ -877,8 +895,9 @@ A8 & DINOv3-alone + SSL & \multicolumn{5}{c}{\todo{W9}} \\
 A9 & Fusion, no SSL & \multicolumn{5}{c}{\todo{W9}} \\
 \bottomrule
 \end{tabular}
-\caption{Retrieval over the 2{,}636 verified pairs with the 42{,}773-crop
-corpus as distractors. \todo{All cells: W4 = featurize the corpus with
+\caption{Retrieval-stage comparison over the 577 expert-confirmed positive
+pairs with the 42{,}773-crop corpus as distractors (discovery-bias caveat
+in Protocol). \todo{All cells: W4 = featurize the corpus with
 each frozen encoder and score Recall@$K$/mAP; W9 = retrain rows A8--A9
 (DINOv3-alone + SSL head; fusion without SSL). A6 uses the ensemble
 configuration of Du, Le, and Honig (2024), reimplemented from the
@@ -1031,40 +1050,41 @@ after W2/W3}}
 \label{fig:sensitivity}
 \end{figure}
 
-\subsection{End-to-End Survival of Verified Pairs}
+\subsection{Survival of Confirmed Pairs Through the Decision Gates}
 
-Verification metrics above say nothing about pairs the funnel never
-surfaces. Two survival analyses address this at different scopes. First,
-\emph{within the labeled candidate sets}: of the 325 confirmed positives
-on Shard~1, the inlier gate removes 9 and the pose gate a further 3
-(96.3\% survive); of the 252 on Shard~2, the inlier gate removes none and
-the pose gate 4 (98.4\%); jointly, 561 of 577 confirmed positives
-(97.2\%) survive the two decision gates. These figures cannot speak to
-the retrieval and correspondence-floor stages, because labels exist only
-for pairs that already passed them. Second, therefore, the full-corpus
-audit: Table~\ref{tab:survival} pushes all 2{,}636 verified pairs through
-every stage at frozen thresholds and reports the fraction still alive
-after each. That table is the paper's only end-to-end claim, and its
-final row answers the historian's operative question: \emph{of the
-reproductions known to exist, how many does the system find?}
+Verification metrics above score decisions pair by pair; the survival
+analysis of Table~\ref{tab:survival} asks the cumulative question instead:
+of the pairs experts confirmed to be the same exposure, how many emerge
+from the decision gates intact? Jointly, 561 of 577 confirmed positives
+(97.2\%) survive. We state the scope plainly: this analysis begins at the
+decision gates, because labels exist only for candidates that already
+passed retrieval and the correspondence floor. A full-archive recall ---
+``of every reproduction that exists in the archive, how many does the
+system find?'' --- is not reported by design and, we argue, cannot be
+reported honestly by anyone: answering it presupposes a complete
+ground-truth pairing of a $\sim$39{,}000-photograph archive, which is the
+very problem the system exists to address (see the transfer experiment
+for the one setting where an independent, pre-pipeline annotation
+exists).
 
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{@{}lcc@{}}
+\begin{tabular}{@{}lccc@{}}
 \toprule
-Stage & Pairs alive & \% of 2,636 \\
+Stage & Shard 1 & Shard 2 & Joint \\
 \midrule
-All verified pairs & 2,636 & 100.0 \\
-Retrieval top-10 & \todo{W5} & \todo{W5} \\
-+ correspondence floor & \todo{W5} & \todo{W5} \\
-+ inlier ratio $\geq 0.65$ & \todo{W5} & \todo{W5} \\
-+ pose score $\leq 2.13$ (end-to-end) & \todo{W5} & \todo{W5} \\
+Expert-confirmed positives & 325 & 252 & 577 \\
+survive inlier gate ($\geq 0.65$) & 316 & 252 & 568 \\
+survive pose gate ($\leq 2.13$) & 313 & 248 & 561 \\
+\midrule
+Survival rate & 96.3\% & 98.4\% & \textbf{97.2\%} \\
 \bottomrule
 \end{tabular}
-\caption{Stage-by-stage survival of the 2{,}636 verified photo--print
-pairs at frozen thresholds \todo{W5: end-to-end recall audit; also report
-which stage dominates the loss}.}
+\caption{Survival of expert-confirmed same-exposure pairs through the two
+frozen decision gates. Scope: labeled candidate pairs (labels exist only
+downstream of retrieval and the correspondence floor). \todo{add the
+Shard-3 column after the labeling campaign}.}
 \label{tab:survival}
 \end{table}
 
@@ -1074,12 +1094,21 @@ To test whether the pipeline and its thresholds encode anything specific
 to one publication apparatus, we freeze everything --- weights,
 thresholds, correspondence floor --- and run the identical system on the
 Jinchaji Pictorial materials from the Papers of Sha Fei (2{,}146
-photographs, 1{,}122 magazine pages, 4{,}390 crops, 230 annotated pairs):
-Communist base-area propaganda, produced under different printing
-technology and degradation than the Japanese-run \emph{North China}
-corpus, and studied previously by \citet{du2024probing}, whose system
-reached 77.8\% top-15 retrieval on this collection. We report Recall@10/15
-against that reference \todo{W10: frozen-pipeline Jinchaji run} and
+photographs, 1{,}122 magazine pages, 4{,}390 crops): Communist base-area
+propaganda, produced under different printing technology and degradation
+than the Japanese-run \emph{North China} corpus, and studied previously by
+\citet{du2024probing}, whose system reached 77.8\% top-15 retrieval on
+this collection. This domain also carries the one annotation in either
+collection that predates any retrieval model: pairs identified
+\emph{entirely by hand} by three trained annotators who memorized batches
+of source photographs and searched the printed pages by eye
+\cite{du2024probing}, of which 230 were used as that paper's evaluation
+set. Because those labels owe nothing to any pipeline, retrieval recall
+measured against them carries no discovery bias --- with the converse
+caveat, which we also print, that manual search cannot guarantee
+exhaustiveness, so they are a floor, not a census. We report Recall@10/15
+against this annotation \todo{W10: frozen-pipeline Jinchaji run; confirm
+the annotation file is recovered and its provenance documented} and
 verification P/R/F1, conditional on the candidate set, on hand-labeled
 filter survivors \todo{Jinchaji survivor labeling under the same
 codebook}. For this collection the supplementary release contains
@@ -1090,11 +1119,9 @@ redistributed.
 \label{sec:human}
 
 \paragraph{Annotation reliability.}
-NCR-Match itself was built under the two-round verification protocol
-described in Dataset Construction, whose second round excluded same-scene
-negatives --- precisely the confusion the verification stage exists to
-resolve. For the shard labels used in
-Table~\ref{tab:verification}, a written one-page codebook fixes the
+NCR-Match consists of expert-labeled candidate pairs, and the reliability
+of those labels is itself an evaluated quantity. For the shard labels used
+in Table~\ref{tab:verification}, a written one-page codebook fixes the
 contested cases (adjacent contact-sheet frames; crops of a same-scene
 negative), after which two annotators --- a domain-expert historian of the
 period and a trained research assistant --- independently label all
@@ -1241,10 +1268,9 @@ historical claim is made (verification precision, conditional on the
 expert-labeled candidate set, is 90.2\% on the held-out validation
 shard --- roughly one accepted pair in ten is wrong before
 adjudication, which is why adjudication is not optional); and coverage
-is reported as a per-stage survival table
-(Table~\ref{tab:survival}, \todo{numbers from the end-to-end audit
-over the 2{,}636 verified pairs, job W5}) rather than implied to be
-complete.
+is reported as the survival analysis of Table~\ref{tab:survival},
+scoped explicitly to the expert-labeled pairs, rather than implied to
+be complete.
 
 \paragraph{Dual use.}
 Nothing in the pose signal is specific to archives: a method that
@@ -1257,8 +1283,8 @@ leaving it implicit.
 
 \paragraph{Dataset duties and licensing.}
 The release ships with a datasheet \cite{gebru2021datasheets} that
-records collection provenance, the two-round verification protocol,
-and --- centrally --- the archive's own selection bias: the North
+records collection provenance, the labeling codebook and adjudication
+protocol, and --- centrally --- the archive's own selection bias: the North
 China Railway Archive is itself a curated product of the occupation
 press apparatus, and what it omits is a property of the source that
 the benchmark inherits; the benchmark measures matching, not
@@ -1288,9 +1314,10 @@ confirmed positives (halftone-only, crop, rotation/mirror, retouch,
 recaption) --- quantifies exactly which manipulation classes the
 image-only system cannot see.}
 \textbf{Conditional metrics.} Verification P/R/F1 are conditional on
-the candidate set; the survival table is the paper's only end-to-end
-claim, and \todo{end-to-end survival numbers, audit W5} bound what a
-historian ultimately misses.
+the candidate set; the survival analysis is scoped to expert-labeled
+pairs, and full-archive recall is unmeasurable by design --- the
+strongest coverage statement we can make is the 97.2\% gate-survival
+rate plus the discovery-bias disclosure.
 \textbf{Transductive training.} The fusion head is trained
 self-supervised on the full unlabeled working corpus, which includes
 the evaluation images (no labels are used).
@@ -1326,9 +1353,10 @@ that framing. We formulated exposure-identity vs.\ same-scene
 discrimination on cross-domain photo-to-halftone material and, to our
 knowledge, are the first to decide it using the relative camera pose
 inferred by a 3D foundation model, wrapped in a conservative,
-auditable decision layer. We release NCR-Match --- 2{,}636 verified
-photo--print pairs with exposure-identity and same-scene-negative
-labels, with datasheet and code --- deposited, not promised. With
+auditable decision layer. We release NCR-Match --- expert-adjudicated
+candidate pairs with exposure-identity and same-scene-negative labels
+(1{,}279 at submission, growing shard by shard), with datasheet and
+code --- deposited, not promised. With
 thresholds frozen on the development shard, the verifier reaches
 P~90.2 / R~98.4 / F1~94.1 on held-out validation, conditional on the
 candidate set (\todo{Shard-3 test row, one-shot frozen evaluation of
