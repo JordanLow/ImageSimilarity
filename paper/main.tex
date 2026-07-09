@@ -186,9 +186,9 @@ contributes $+6.5$ points of precision over inlier-ratio verification alone
   against verification without pose, classical pose recovered for free from
   the already-computed homography and from essential-matrix decomposition,
   MASt3R pose \cite{leroy2024mast3r}, and a learned classifier over identical
-  inputs \todo{Table~\ref{tab:verification} rows B2, B4--B10: P/R/F1 + PR-AUC
-  per variant with bootstrap CIs and McNemar tests vs.\ the full system ---
-  CPU ablations over cached manifests plus MASt3R run W6}.
+  inputs \todo{remaining Table~\ref{tab:verification} rows: B8
+  (essential-matrix pose), B9 (MASt3R, run W6), B11--B14 (alignment and
+  matcher perturbations, runs W7/W8), plus all Shard-3 columns}.
 \item \textbf{Benchmark.} NCR-Match: 2{,}636 verified
   photograph--print pairs linking the North China Railway Archive
   ($\sim$39{,}000 photographs, 1939--1945) to the magazine \emph{North China}
@@ -212,9 +212,9 @@ contributes $+6.5$ points of precision over inlier-ratio verification alone
   annotations and identifiers only, no images.}
 \item \textbf{Historian-in-the-loop evaluation and findings.} An annotation
   reliability study \todo{$\kappa$, adjudicated gold labels, `Unsure' as a
-  first-class outcome}, a within-subjects time-saved study \todo{4--6
-  historians, time-to-first-verified-republication and verified matches per
-  30-minute session, pipeline-verified candidates vs.\ plain top-10 list},
+  first-class outcome}, a measured workflow-impact analysis (review-queue
+  reduction and expert adjudication throughput \todo{adjudication timing
+  from the Shard-3 campaign}),
   and new historical findings surfaced by the system \todo{2--3 case studies
   from the confirmed-match list, adjudicated by the domain expert}.
 \end{itemize}
@@ -466,8 +466,8 @@ Excluded in round two as same-scene & \todo{count} ($\sim$7\%) \\
 Verified pairs (NCR-Match) & 2{,}636 \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Labeled candidate pairs (pos.\,/\,neg.\,/\,Unsure)}}\\
-Shard 1 (development) & 325\,/\,316\,/\,\todo{n} \\
-Shard 2 (validation, thresholds frozen) & 252\,/\,386\,/\,\todo{n} \\
+Shard 1 (development) & 325\,/\,316\,/\,2 \\
+Shard 2 (validation, thresholds frozen) & 252\,/\,386\,/\,0 \\
 Shard 3 (test, evaluated once) & \todo{n\,/\,n\,/\,n} \\
 Inter-annotator agreement (Cohen's $\kappa$) & \todo{$\kappa$} \\
 \midrule
@@ -652,9 +652,10 @@ $\tau_{\mathrm{corr}}$ for the Shard-1/2 runs (working log records
 correspondences or to epipolar inliers (the code gates on the filtered
 count, the log narrative says raw), and verify that the resolved definition
 regenerates exactly the 641/638 labeled candidate sets of Shards~1--2 that
-produced rows B2/B3; floor swept 0--200 in
-Table~\ref{tab:verification} row~B1, CPU-only from
-\texttt{aspan\_all\_manifest.jsonl} --- run W1}. The floor is a compute
+produced rows B2/B3; row~B1 sweeps the floor over the full observed
+correspondence range on the development shard (best-F1 floor 2{,}375 raw
+correspondences, applied frozen to Shard~2), CPU-only from
+\texttt{aspan\_all\_manifest.jsonl}}. The floor is a compute
 gate, not a match decision: it keeps the expensive pose stage off hopeless
 pairs, and because every attempted pair---including failures---is logged,
 the floor can be swept post hoc without re-running the matcher.
@@ -903,42 +904,63 @@ Shard~2, yielding 86.7~/~96.3~/~91.3 and 90.2~/~98.4~/~94.1. Because the
 pose gate only removes pairs from the inlier-gate survivors, the
 discordant-pair counts for B2 vs.\ B3 are fully determined, and the exact
 McNemar $p$-values are $2.6\times10^{-3}$ (Shard~1) and
-$5.3\times10^{-4}$ (Shard~2); Holm correction is applied across the full
-table once all rows are complete \todo{Holm-corrected $p$ column}.
+$8.6\times10^{-4}$ (Shard~2). After Holm correction across the five
+Shard-2 tests in Table~\ref{tab:verification}, every reported difference
+except the rotation$+xy$ row (B4, $p=0.50$) remains significant at
+$\alpha=0.05$.
 
 Three groups of rows probe the mechanism. \emph{Component rows} B4/B5
 split the pose score of Eq.~\ref{eq:pose-score} into its high-weight terms
-(rotation angle and
-$xy$-translation) and its low-weight terms (fov shift and
-$z$-translation); if the weighting is right, B5 should perform near
-chance, and the per-component score distributions
-(Figure~\ref{fig:pose-components}) should show the same asymmetry. Row~B6
-gates on the global feature-similarity signal that the pipeline records
-but \emph{excludes} from its decision rule owing to heavy between-class
-distribution overlap; B6 quantifies what a tuned gate on that signal would
-have achieved. \emph{Alternative-pose rows} B7--B9 answer the question a
-reader should ask: the alignment stage already estimates a homography, and
-decomposing it yields relative rotation and translation for free
+(rotation angle and $xy$-translation) and its low-weight terms (fov shift
+and $z$-translation). The outcome matches the design: the low-weight gate
+rejects nothing at the published threshold --- B5 is decision-identical
+to the pose-free rule B2 --- while B4 alone is statistically
+indistinguishable from the full system ($p=0.50$): rotation and lateral
+translation carry essentially all of the pose signal. The per-component
+distributions agree (Figure~\ref{fig:pose-components}): single-component
+AUCs are 0.948\,/\,0.973 for rotation and 0.929\,/\,0.957 for
+$xy$-translation, against 0.830--0.893 for $z$ and fov. Row~B6 gates on
+the global feature-similarity signal that the pipeline records but
+\emph{excludes} from its decision rule: a dev-tuned gate on it reaches
+only F1 77.5\,/\,72.6 with PR-AUC 0.853\,/\,0.838 --- far below every
+geometric row --- which is why it is recorded but not used.
+\emph{Alternative-pose rows} B7--B9 answer the question a reader should
+ask: the alignment stage already estimates a homography, and decomposing
+it yields relative rotation and translation for free
 \cite{malis2007homography} (B7); an essential-matrix pose from the same
 correspondences is nearly as cheap \cite{nister2004fivepoint} (B8); and
 MASt3R \cite{leroy2024mast3r} is the strongest alternative feed-forward
 pose head (B9). Each is tuned on Shard~1 only and applied frozen, exactly
-as our gate was. Row~B10 replaces the hand-set thresholds with a learned
-classifier over the stored per-pair signals, in the spirit of
-Doppelgangers \cite{cai2023doppelgangers}. Rows B11--B14 perturb the
-geometry stage itself (alignment off; filtered vs.\ raw alignment
-correspondences; matcher swaps to LightGlue
-\cite{lindenberger2023lightglue} and RoMa \cite{edstedt2024roma}).
+as our gate was. The classical alternative is genuinely competitive ---
+the strongest form of the objection --- but consistently weaker: at its
+dev-tuned $4.5^{\circ}$ rotation threshold, B7 gives up 4.9 recall points
+on Shard~1 and 2.3 F1 points on Shard~2 relative to the full system, and
+its threshold-free PR-AUC trails the VGGT score by 4.2 and 3.1 points
+(0.922\,/\,0.962 vs.\ 0.964\,/\,0.993), a gap that is stable under
+$\pm 30\%$ focal-length misspecification. Row~B10 replaces the hand-set
+thresholds with a logistic-regression classifier over the stored per-pair
+signals, in the spirit of Doppelgangers \cite{cai2023doppelgangers},
+trained on Shard~1 with a cross-validated threshold. The fitted rule
+trades recall for precision (98.0\,/\,95.6 vs.\ the full system's
+90.2\,/\,98.4 on Shard~2), a significant paired difference ($p=0.021$;
+Holm-adjusted $0.042$). We nonetheless keep the two-threshold rule as the
+deployed default: it is interpretable, and it favors recall --- in
+provenance work a missed pair is a discovery permanently lost, while a
+false positive is caught in adjudication --- but B10 shows clear headroom
+for a learned decision layer. Rows B11--B14 perturb the geometry stage
+itself (alignment off; filtered vs.\ raw alignment correspondences;
+matcher swaps to LightGlue \cite{lindenberger2023lightglue} and RoMa
+\cite{edstedt2024roma}).
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.94\columnwidth}{\centering\vspace{1.5em}
-\todo{per-component violin/ROC plots of the four pose deltas on exact-copy
-vs.\ same-scene pairs, plus the global-similarity distribution-overlap
-panel; CPU from \texttt{vggt\_judged\_manifest.jsonl}}
-\vspace{1.5em}}}
+\includegraphics[width=\columnwidth]{figures/pose_signal_analysis.png}
 \caption{Per-component pose-delta distributions for exposure-identical
-vs.\ same-scene candidate pairs.}
+pairs vs.\ same-scene negatives among correspondence-floor survivors.
+Exposure-identical pairs concentrate near zero on every component.
+Single-component AUCs --- rotation 0.948\,/\,0.973, $xy$-translation
+0.929\,/\,0.957, $z$ 0.830\,/\,0.866, fov 0.891\,/\,0.893 (Shard~1\,/\,2)
+--- support the weighting asymmetry of Eq.~\ref{eq:pose-score}.}
 \label{fig:pose-components}
 \end{figure}
 
@@ -951,18 +973,18 @@ vs.\ same-scene candidate pairs.}
 & Variant & P~/~R~/~F1 & P~/~R~/~F1 & P~/~R~/~F1 & (S2) & vs.\ B3 (S2) \\
 \midrule
 B0 & Accept-all (base rate) & 50.7 / 100 / 67.3 & 39.5 / 100 / 56.6 & \todo{S3} & --- & $<10^{-6}$ \\
-B1 & Correspondence floor only & \multicolumn{5}{l}{\todo{floor sweep 0--200 over \texttt{aspan\_all\_manifest} after breakpoint-0 rerun (W1); CPU}} \\
-B2 & + inlier-ratio gate (no pose) & 82.9 / 97.2 / 89.5 & 83.7 / 100 / 91.1 & \todo{S3} & \todo{sweep} & $5.3\times10^{-4}$ \\
-B3 & \textbf{+ weighted pose gate (full)} & \textbf{86.7 / 96.3 / 91.3} & \textbf{90.2 / 98.4 / 94.1} & \todo{S3} & \todo{sweep} & --- \\
+B1 & Correspondence floor only (dev floor 2{,}375) & 88.4 / 89.2 / 88.8 & 87.8 / 91.7 / 89.7 & \todo{S3} & 0.962 & $8.1\times10^{-3}$ \\
+B2 & + inlier-ratio gate (no pose) & 82.9 / 97.2 / 89.5 & 83.7 / 100 / 91.1 & \todo{S3} & 0.996 & $8.6\times10^{-4}$ \\
+B3 & \textbf{+ weighted pose gate (full)} & \textbf{86.7 / 96.3 / 91.3} & \textbf{90.2 / 98.4 / 94.1} & \todo{S3} & 0.993 & --- \\
 \midrule
-B4 & Pose: rotation + $xy$ terms only & \multicolumn{5}{l}{\todo{CPU re-scoring of cached manifests, \texttt{--pose-components rotation\_xy}}} \\
-B5 & Pose: fov + $z$ terms only & \multicolumn{5}{l}{\todo{CPU re-scoring, \texttt{--pose-components fov\_z}; expected near-chance}} \\
-B6 & Global-similarity gate & \multicolumn{5}{l}{\todo{threshold sweep on stored global-similarity signal; dev-tuned, frozen on S2/S3}} \\
+B4 & Pose: rotation + $xy$ terms only & 86.2 / 96.3 / 91.0 & 89.5 / 98.4 / 93.8 & \todo{S3} & --- & 0.50 \\
+B5 & Pose: fov + $z$ terms only & 82.9 / 97.2 / 89.5 & 83.7 / 100 / 91.1 & \todo{S3} & --- & $8.6\times10^{-4}$ \\
+B6 & Global-similarity gate (dev thr.\ 0.955) & 70.3 / 86.5 / 77.5 & 61.1 / 89.3 / 72.6 & \todo{S3} & 0.838 & --- \\
 \midrule
-B7 & Homography-decomposition pose & \multicolumn{5}{l}{\todo{$R,t$ from \texttt{decomposeHomographyMat} on the cached alignment homographies; CPU}} \\
+B7 & Homography-decomposition pose (dev 4.5$^{\circ}$) & 86.6 / 91.4 / 88.9 & 86.9 / 97.2 / 91.8 & \todo{S3} & 0.962 & \todo{frozen-thr.\ pairing} \\
 B8 & Essential-matrix pose & \multicolumn{5}{l}{\todo{five-point + RANSAC on cached ASpanFormer correspondences; CPU}} \\
 B9 & MASt3R relative pose & \multicolumn{5}{l}{\todo{W6: MASt3R pose on all labeled pairs, same tune-on-S1 protocol}} \\
-B10 & Learned classifier (LR / MLP) & \multicolumn{5}{l}{\todo{logistic reg.\ + 2-layer MLP over stored signals (correspondence count, inlier ratio, pose deltas, global sim); train S1, frozen}} \\
+B10 & Learned classifier (LR, train S1) & --- & 98.0 / 95.6 / 96.8 & \todo{S3} & 0.993 & 0.021 \\
 \midrule
 B11 & Alignment off & \multicolumn{5}{l}{\todo{W8: VGGT on unaligned crops}} \\
 B12 & Filtered alignment correspondences & \multicolumn{5}{l}{\todo{W8: raw vs.\ filtered correspondences for alignment}} \\
@@ -996,26 +1018,35 @@ evaluation, with no feedback into any reported operating point.
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.94\columnwidth}{\centering\vspace{1.5em}
-\todo{sensitivity figure, three panels: (a) inlier-ratio sweep 0.30--0.90,
-F1 per shard, 0.65 marked; (b) ROC/PR over the continuous pose score, 2.13
-marked; (c) 2D F1 heatmap over (inlier ratio, pose score) on dev, replotted
-on Shard 3 --- CPU sweeps over cached manifests; panel (c) requires Shard-3
-manifests, W2/W3}
-\vspace{1.5em}}}
-\caption{Threshold sensitivity of the two frozen operating constants.}
+\includegraphics[width=\columnwidth]{figures/sensitivity_curves.png}
+\caption{Threshold sensitivity of the two frozen operating constants.
+Top left: inlier-ratio sweep (0.65 marked). Top right: PR/ROC over the
+continuous pose score among inlier-gate survivors (PR-AUC
+0.971\,/\,0.966; $\star$ = 2.13). Bottom left: 2-D F1 surface over both
+thresholds on the development shard ($\star$ = published operating point;
+Shard-2 inset) --- a broad plateau; the published point deliberately sits
+on its recall-leaning side rather than at the F1 maximum. Bottom right:
+within-labeled-set Recall@$K$. \todo{replot the 2-D surface on Shard~3
+after W2/W3}}
 \label{fig:sensitivity}
 \end{figure}
 
 \subsection{End-to-End Survival of Verified Pairs}
 
 Verification metrics above say nothing about pairs the funnel never
-surfaces. Table~\ref{tab:survival} therefore pushes all 2{,}636 verified
-pairs through every stage at frozen thresholds and reports the fraction
-still alive after each. This survival table is the paper's only
-end-to-end claim, and its final row answers the historian's operative
-question: \emph{of the reproductions known to exist, how many does the
-system find?}
+surfaces. Two survival analyses address this at different scopes. First,
+\emph{within the labeled candidate sets}: of the 325 confirmed positives
+on Shard~1, the inlier gate removes 9 and the pose gate a further 3
+(96.3\% survive); of the 252 on Shard~2, the inlier gate removes none and
+the pose gate 4 (98.4\%); jointly, 561 of 577 confirmed positives
+(97.2\%) survive the two decision gates. These figures cannot speak to
+the retrieval and correspondence-floor stages, because labels exist only
+for pairs that already passed them. Second, therefore, the full-corpus
+audit: Table~\ref{tab:survival} pushes all 2{,}636 verified pairs through
+every stage at frozen thresholds and reports the fraction still alive
+after each. That table is the paper's only end-to-end claim, and its
+final row answers the historian's operative question: \emph{of the
+reproductions known to exist, how many does the system find?}
 
 \begin{table}[t]
 \centering
@@ -1073,24 +1104,25 @@ to each other's answers. We report Cohen's $\kappa$ \cite{cohen1960kappa}
 \emph{Unsure} counts \todo{counts}, and adjudicate disagreements into the
 gold labels used throughout.
 
-\paragraph{Historian time-saved study.}
-We run a within-subjects study with 4--6 historians and graduate students
-of the period \todo{final $N$ and recruitment description}. Each
-participant works through two matched query sets of archival photographs
-\todo{query-set size and matching procedure} under two conditions:
-(A)~the full system --- pipeline-verified candidates with aligned overlay
-visualizations --- and (B)~a plain top-10 retrieval list. Condition order
-and query-set assignment are counterbalanced across participants. We
-measure time-to-first-verified-republication (elapsed time until the
-participant confirms a true republication of a query photograph) and
-verified matches per 30-minute session. Because a participant-level
-two-sided Wilcoxon signed-rank test \cite{wilcoxon1945} cannot reach
-$p<0.05$ at this sample size (the minimum attainable $p$ is $0.125$ at
-$N{=}4$ and $0.0625$ at $N{=}5$), the study is presented descriptively:
-per-condition session medians, the direction of the paired difference
-for every participant, and rank-biserial effect sizes, with sessions as
-the named denominator and no hypothesis-test claim \todo{all results;
-sessions scheduled}.
+\paragraph{Workflow impact.}
+We quantify the system's contribution to the historian's workflow as
+reduction of the review queue, with named denominators. A manual baseline
+does not exist at this scale: exhaustively comparing $\sim$39{,}000
+archive photographs against the 4{,}558 magazine crops is on the order of
+$1.8\times10^{8}$ pairwise judgements --- at ten seconds per judgement,
+decades of person-time. The funnel reduces the roughly 70{,}000 top-10
+candidate pairs of each labeled shard to 641 and 638 pairs requiring
+expert eyes, a two-orders-of-magnitude reduction, and the verification
+stage then concentrates truth within that queue: the class prior of the
+candidate set is 50.7\%\,/\,39.5\% positive (Shards~1\,/\,2), whereas
+86.7\%\,/\,90.2\% of what the system finally asserts is a confirmed
+positive. Expert adjudication throughput on this queue is
+\todo{median seconds per pair, logged during the Shard-3 labeling
+campaign}, so a shard's verified output costs hours of expert time
+rather than months. A controlled within-subjects user study with
+independent historians --- tool vs.\ plain retrieval list, counterbalanced
+--- is planned as future work; we do not claim measured time savings
+beyond the queue-reduction arithmetic above.
 
 \subsection{Qualitative Analysis and Failure Modes}
 
@@ -1167,14 +1199,11 @@ changes the legible content of the printed image (e.g., a person or
 object removed by the crop), same evidence requirements. This slot is
 cut first if space is short.}
 
-These findings cost the historian hours, not months:
-\todo{one sentence with the measured result of the within-subjects
-historian study --- time-to-first-verified-republication and verified
-matches per 30-minute session, pipeline-verified candidates with
-overlays (condition A) vs.\ plain top-10 retrieval (condition B),
-N=4--6 historians, 20--30 queries each; report medians and the paired
-direction; denominator = sessions. Study of report section 6.6, sessions
-Jul 16--21.}
+These findings cost the historian hours, not months: each begins from a
+review queue of a few hundred system-verified pairs rather than an
+archive of tens of thousands of photographs (see the workflow-impact
+analysis in the Human Evaluation subsection \todo{insert the measured
+adjudication throughput once logged during the Shard-3 campaign}).
 
 \section{Ethics, Positionality, and Broader Impact}
 \label{sec:ethics}
