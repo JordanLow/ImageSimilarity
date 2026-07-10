@@ -456,26 +456,26 @@ Table~\ref{tab:dataset} summarizes the benchmark and its shards.
 
 \begin{table}[t]
 \centering
-\small
-\setlength{\tabcolsep}{4pt}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lr@{}}
 \toprule
 \multicolumn{2}{@{}l}{\emph{Source material}}\\
-Archive photographs (NCR Archive, 1939--1945) & $\sim$39{,}000 \\
-\emph{North China} magazine issues (1939--1943) & \todo{issue count} \\
-Working corpus (YOLOv11 crops, both collections) & 42{,}773 \\
+Archive photographs (1939--45) & $\sim$39{,}000 \\
+\emph{North China} issues (1939--43) & \todo{n} \\
+Working corpus (YOLOv11 crops) & 42{,}773 \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Expert-labeled benchmark (NCR-Match)}}\\
-Labeled candidate pairs at submission & 1{,}279 (+ Shard 3--6 \todo{counts}) \\
-\quad confirmed same-exposure / same-scene neg. & 577\,/\,702 \\
+Labeled candidate pairs & 1{,}279 \todo{+S3--6} \\
+\quad same-exposure / same-scene neg. & 577\,/\,702 \\
 \midrule
-\multicolumn{2}{@{}l}{\emph{Labeled candidate pairs (pos.\,/\,neg.\,/\,Unsure)}}\\
+\multicolumn{2}{@{}l}{\emph{Labeled pairs (pos.\,/\,neg.\,/\,Unsure)}}\\
 Shard 1 (development) & 325\,/\,316\,/\,2 \\
-Shard 2 (validation, thresholds frozen) & 252\,/\,386\,/\,0 \\
+Shard 2 (validation, frozen) & 252\,/\,386\,/\,0 \\
 Shard 3 (test, evaluated once) & \todo{n\,/\,n\,/\,n} \\
-Inter-annotator agreement (Cohen's $\kappa$) & \todo{$\kappa$} \\
+Inter-annotator agreement ($\kappa$) & \todo{$\kappa$} \\
 \midrule
-\multicolumn{2}{@{}l}{\emph{Transfer domain (Jinchaji Pictorial\,/\,Papers of Sha Fei)}}\\
+\multicolumn{2}{@{}l}{\emph{Transfer domain (Jinchaji\,/\,Sha Fei)}}\\
 Photographs\,/\,magazine pages & 2{,}146\,/\,1{,}122 \\
 Crops\,/\,annotated pairs & 4{,}390\,/\,230 \\
 \bottomrule
@@ -879,17 +879,18 @@ spots and grows the benchmark}.
 
 \begin{table}[t]
 \centering
-\small
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{@{}llccccc@{}}
 \toprule
 & Encoder & R@1 & R@5 & R@10 & R@15 & mAP \\
 \midrule
-A1 & SSCD \cite{pizzi2022sscd} & \multicolumn{5}{c}{\todo{W4}} \\
-A2 & DINOv2 global \cite{oquab2024dinov2} & \multicolumn{5}{c}{\todo{W4}} \\
-A3 & DINOv3 global \cite{simeoni2025dinov3} & \multicolumn{5}{c}{\todo{W4}} \\
-A4 & CLIP / SigLIP~2 \cite{radford2021clip,tschannen2025siglip2} & \multicolumn{5}{c}{\todo{W4}} \\
-A5 & GeM \cite{radenovic2019gem} & \multicolumn{5}{c}{\todo{W4}} \\
-A6 & ViT ensemble \cite{du2024probing} & \multicolumn{5}{c}{\todo{W4}} \\
+A1 & SSCD & \multicolumn{5}{c}{\todo{W4}} \\
+A2 & DINOv2 global & \multicolumn{5}{c}{\todo{W4}} \\
+A3 & DINOv3 global & \multicolumn{5}{c}{\todo{W4}} \\
+A4 & CLIP / SigLIP~2 & \multicolumn{5}{c}{\todo{W4}} \\
+A5 & GeM & \multicolumn{5}{c}{\todo{W4}} \\
+A6 & ViT ensemble & \multicolumn{5}{c}{\todo{W4}} \\
 A7 & Ours: fusion + SSL & \multicolumn{5}{c}{\todo{W4}} \\
 A8 & DINOv3-alone + SSL & \multicolumn{5}{c}{\todo{W9}} \\
 A9 & Fusion, no SSL & \multicolumn{5}{c}{\todo{W9}} \\
@@ -897,11 +898,13 @@ A9 & Fusion, no SSL & \multicolumn{5}{c}{\todo{W9}} \\
 \end{tabular}
 \caption{Retrieval-stage comparison over the 577 expert-confirmed positive
 pairs with the 42{,}773-crop corpus as distractors (discovery-bias caveat
-in Protocol). \todo{All cells: W4 = featurize the corpus with
-each frozen encoder and score Recall@$K$/mAP; W9 = retrain rows A8--A9
-(DINOv3-alone + SSL head; fusion without SSL). A6 uses the ensemble
-configuration of Du, Le, and Honig (2024), reimplemented from the
-published description (confirm weights are publicly released before
+in Protocol). Encoders: SSCD \cite{pizzi2022sscd}; DINOv2
+\cite{oquab2024dinov2}; DINOv3 \cite{simeoni2025dinov3}; CLIP
+\cite{radford2021clip} / SigLIP~2 \cite{tschannen2025siglip2}; GeM
+\cite{radenovic2019gem}; the ViT ensemble of \citet{du2024probing}.
+\todo{All cells: W4 = featurize the corpus with each frozen encoder and
+score Recall@$K$/mAP; W9 = retrain rows A8--A9. A6 is reimplemented from
+the published description (confirm weights are publicly released before
 claiming otherwise).}}
 \label{tab:retrieval}
 \end{table}
@@ -985,29 +988,30 @@ Single-component AUCs --- rotation 0.948\,/\,0.973, $xy$-translation
 
 \begin{table*}[t]
 \centering
-\small
+\footnotesize
+\setlength{\tabcolsep}{4.5pt}
 \begin{tabular}{@{}llccccc@{}}
 \toprule
 & & Shard 1 (dev) & Shard 2 (val) & Shard 3 (test) & PR-AUC & McNemar \\
 & Variant & P~/~R~/~F1 & P~/~R~/~F1 & P~/~R~/~F1 & (S2) & vs.\ B3 (S2) \\
 \midrule
 B0 & Accept-all (base rate) & 50.7 / 100 / 67.3 & 39.5 / 100 / 56.6 & \todo{S3} & --- & $<10^{-6}$ \\
-B1 & Correspondence floor only (dev floor 2{,}375) & 88.4 / 89.2 / 88.8 & 87.8 / 91.7 / 89.7 & \todo{S3} & 0.962 & $8.1\times10^{-3}$ \\
+B1 & Correspondence floor (dev 2{,}375) & 88.4 / 89.2 / 88.8 & 87.8 / 91.7 / 89.7 & \todo{S3} & 0.962 & $8.1\times10^{-3}$ \\
 B2 & + inlier-ratio gate (no pose) & 82.9 / 97.2 / 89.5 & 83.7 / 100 / 91.1 & \todo{S3} & 0.996 & $8.6\times10^{-4}$ \\
 B3 & \textbf{+ weighted pose gate (full)} & \textbf{86.7 / 96.3 / 91.3} & \textbf{90.2 / 98.4 / 94.1} & \todo{S3} & 0.993 & --- \\
 \midrule
-B4 & Pose: rotation + $xy$ terms only & 86.2 / 96.3 / 91.0 & 89.5 / 98.4 / 93.8 & \todo{S3} & --- & 0.50 \\
-B5 & Pose: fov + $z$ terms only & 82.9 / 97.2 / 89.5 & 83.7 / 100 / 91.1 & \todo{S3} & --- & $8.6\times10^{-4}$ \\
-B6 & Global-similarity gate (dev thr.\ 0.955) & 70.3 / 86.5 / 77.5 & 61.1 / 89.3 / 72.6 & \todo{S3} & 0.838 & --- \\
+B4 & Pose: rotation + $xy$ only & 86.2 / 96.3 / 91.0 & 89.5 / 98.4 / 93.8 & \todo{S3} & --- & 0.50 \\
+B5 & Pose: fov + $z$ only & 82.9 / 97.2 / 89.5 & 83.7 / 100 / 91.1 & \todo{S3} & --- & $8.6\times10^{-4}$ \\
+B6 & Global-similarity gate (dev 0.955) & 70.3 / 86.5 / 77.5 & 61.1 / 89.3 / 72.6 & \todo{S3} & 0.838 & --- \\
 \midrule
-B7 & Homography-decomposition pose (dev 4.5$^{\circ}$) & 86.6 / 91.4 / 88.9 & 86.9 / 97.2 / 91.8 & \todo{S3} & 0.962 & \todo{frozen-thr.\ pairing} \\
-B8 & Essential-matrix pose & \multicolumn{5}{l}{\todo{five-point + RANSAC on cached ASpanFormer correspondences; CPU}} \\
-B9 & MASt3R relative pose & \multicolumn{5}{l}{\todo{W6: MASt3R pose on all labeled pairs, same tune-on-S1 protocol}} \\
+B7 & Homography-decomp.\ pose (dev 4.5$^{\circ}$) & 86.6 / 91.4 / 88.9 & 86.9 / 97.2 / 91.8 & \todo{S3} & 0.962 & \todo{pairing} \\
+B8 & Essential-matrix pose & \multicolumn{5}{l}{\todo{five-point + RANSAC on cached correspondences; CPU}} \\
+B9 & MASt3R relative pose & \multicolumn{5}{l}{\todo{W6: same tune-on-S1 protocol}} \\
 B10 & Learned classifier (LR, train S1) & --- & 98.0 / 95.6 / 96.8 & \todo{S3} & 0.993 & 0.021 \\
 \midrule
 B11 & Alignment off & \multicolumn{5}{l}{\todo{W8: VGGT on unaligned crops}} \\
-B12 & Filtered alignment correspondences & \multicolumn{5}{l}{\todo{W8: raw vs.\ filtered correspondences for alignment}} \\
-B13 & Matcher swap: LightGlue & \multicolumn{5}{l}{\todo{W7: replace ASpanFormer; re-tune both thresholds on S1, frozen on S2/S3}} \\
+B12 & Filtered alignment corresp. & \multicolumn{5}{l}{\todo{W8: raw vs.\ filtered correspondences}} \\
+B13 & Matcher swap: LightGlue & \multicolumn{5}{l}{\todo{W7: re-tune on S1, frozen on S2/S3}} \\
 B14 & Matcher swap: RoMa & \multicolumn{5}{l}{\todo{W7: same protocol as B13}} \\
 \bottomrule
 \end{tabular}
