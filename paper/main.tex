@@ -656,8 +656,10 @@ correspondence count clears a floor $\tau_{\mathrm{corr}}$
 $\tau_{\mathrm{corr}}$ for the Shard-1/2 runs (working log records
 50/75/100 in different places), resolve whether the floor applies to raw
 correspondences or to epipolar inliers (the code gates on the filtered
-count, the log narrative says raw), and verify that the resolved definition
-regenerates exactly the 641/638 labeled candidate sets of Shards~1--2 that
+count, the log narrative says raw), confirm the retrieval top-$K$ (the
+method and log say top-10; one analysis artifact says top-15), and verify
+that the resolved definitions
+regenerate exactly the 641/638 labeled candidate sets of Shards~1--2 that
 produced rows B2/B3; row~B1 sweeps the floor over the full observed
 correspondence range on the development shard (best-F1 floor 2{,}375 raw
 correspondences, applied frozen to Shard~2), CPU-only from
@@ -926,10 +928,10 @@ Shard~2, yielding 86.7~/~96.3~/~91.3 and 90.2~/~98.4~/~94.1. Because the
 pose gate only removes pairs from the inlier-gate survivors, the
 discordant-pair counts for B2 vs.\ B3 are fully determined, and the exact
 McNemar $p$-values are $2.6\times10^{-3}$ (Shard~1) and
-$8.6\times10^{-4}$ (Shard~2). After Holm correction across the five
-Shard-2 tests in Table~\ref{tab:verification}, every reported difference
-except the rotation$+xy$ row (B4, $p=0.50$) remains significant at
-$\alpha=0.05$.
+$8.6\times10^{-4}$ (Shard~2). After Holm correction across the Shard-2
+tests of rows B1--B5, every difference except the rotation$+xy$ row (B4,
+$p=0.50$) remains significant at $\alpha=0.05$; the learned-classifier
+comparison (B10) awaits a matched-variant recomputation.
 
 Three groups of rows probe the mechanism. \emph{Component rows} B4/B5
 split the pose score of Eq.~\ref{eq:pose-score} into its high-weight terms
@@ -964,9 +966,10 @@ thresholds with a logistic-regression classifier over the stored per-pair
 signals, in the spirit of Doppelgangers \cite{cai2023doppelgangers},
 trained on Shard~1 with a cross-validated threshold. The fitted rule
 trades recall for precision (98.0\,/\,95.6 vs.\ the full system's
-90.2\,/\,98.4 on Shard~2), a significant paired difference ($p=0.021$;
-Holm-adjusted $0.042$). We nonetheless keep the two-threshold rule as the
-deployed default: it is interpretable, and it favors recall --- in
+90.2\,/\,98.4 on Shard~2) \todo{recompute the paired McNemar test on this
+exact LR variant --- the current test was run on a different feature
+configuration and cannot be quoted for this row}. We nonetheless keep the
+two-threshold rule as the deployed default: it is interpretable, and it favors recall --- in
 provenance work a missed pair is a discovery permanently lost, while a
 false positive is caught in adjudication --- but B10 shows clear headroom
 for a learned decision layer. Rows B11--B14 perturb the geometry stage
@@ -1007,7 +1010,7 @@ B6 & Global-similarity gate (dev 0.955) & 70.3 / 86.5 / 77.5 & 61.1 / 89.3 / 72.
 B7 & Homography-decomp.\ pose (dev 4.5$^{\circ}$) & 86.6 / 91.4 / 88.9 & 86.9 / 97.2 / 91.8 & \todo{S3} & 0.962 & \todo{pairing} \\
 B8 & Essential-matrix pose & \multicolumn{5}{l}{\todo{five-point + RANSAC on cached correspondences; CPU}} \\
 B9 & MASt3R relative pose & \multicolumn{5}{l}{\todo{W6: same tune-on-S1 protocol}} \\
-B10 & Learned classifier (LR, train S1) & --- & 98.0 / 95.6 / 96.8 & \todo{S3} & 0.993 & 0.021 \\
+B10 & Learned classifier (LR, train S1) & --- & 98.0 / 95.6 / 96.8 & \todo{S3} & 0.993 & \todo{matched} \\
 \midrule
 B11 & Alignment off & \multicolumn{5}{l}{\todo{W8: VGGT on unaligned crops}} \\
 B12 & Filtered alignment corresp. & \multicolumn{5}{l}{\todo{W8: raw vs.\ filtered correspondences}} \\
@@ -1018,8 +1021,9 @@ B14 & Matcher swap: RoMa & \multicolumn{5}{l}{\todo{W7: same protocol as B13}} \
 \caption{Verification conditional on the candidate set: the expert-labeled
 filter-survivor pairs of each shard (641 on Shard~1, 638 on Shard~2,
 \todo{$n$} on Shard~3). Thresholds and weights for every variant are tuned
-on Shard~1 only and applied frozen elsewhere. McNemar $p$-values are exact
-tests on paired decisions; Holm correction across the table
+on Shard~1 only and applied frozen elsewhere. McNemar $p$-values are
+computed on paired decisions (exact binomial for small discordant counts,
+continuity-corrected $\chi^2$ otherwise); Holm correction across the table
 \todo{apply once all rows are run}. Shard-3 column filled by the single
 frozen evaluation \todo{W2/W3}.}
 \label{tab:verification}
