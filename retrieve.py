@@ -45,9 +45,16 @@ def load_model_from_file(model_path: str, class_name: str | None = None):
     return model_class()
 
 
-def read_img(path: str) -> torch.Tensor:
-    """Match match.py preprocessing: RGB -> 224x224 -> 3-channel grayscale."""
+def read_img(path: str, transform=None) -> torch.Tensor:
+    """Load image as a (1, C, H, W) float32 tensor.
+
+    If transform is provided (e.g. from model.get_transform()), it is applied to the
+    PIL image directly. Otherwise falls back to the default grayscale pipeline used
+    by the DINO fine-tuned backbone.
+    """
     img = Image.open(path).convert("RGB")
+    if transform is not None:
+        return transform(img).unsqueeze(0)
     img = img.resize((224, 224))
     img = tf.to_tensor(img)
     img = tf.rgb_to_grayscale(img, num_output_channels=3)
@@ -73,12 +80,12 @@ def l2_normalize_np(features: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     return features / np.maximum(denom, eps)
 
 
-def featurize(paths: Sequence[str], model: torch.nn.Module, device: torch.device) -> np.ndarray:
+def featurize(paths: Sequence[str], model: torch.nn.Module, device: torch.device, transform=None) -> np.ndarray:
     features: list[np.ndarray] = []
     model.eval()
     with torch.no_grad():
         for i, path in enumerate(paths, start=1):
-            tensor = read_img(path).to(device)
+            tensor = read_img(path, transform).to(device)
             vec = nn.functional.normalize(model(tensor), dim=1)
             features.append(vec.detach().cpu().numpy().astype(np.float32, copy=False))
             if i % 100 == 0 or i == len(paths):
@@ -214,7 +221,7 @@ def resolve_device(device_arg: str) -> torch.device:
 def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate top-X manifest and feature cache.")
     parser.add_argument("--weights", type=str, default="weights_2-11_199.pt")
-    parser.add_argument("--model-definition", type=str, default="ModelCombo.py")
+    parser.add_argument("--model-definition", type=str, default="ModelComboDINO.py")
     parser.add_argument("--model-class", type=str, default=None)
     parser.add_argument("--source", type=str, default="./eval")
     parser.add_argument("--target", type=str, default="./target")
@@ -262,12 +269,16 @@ def main(argv=None) -> None:
 
         print(f"Loading model on {device}: {args.model_definition}")
         model = load_model_from_file(args.model_definition, args.model_class).to(device)
-        load_weights(model, args.weights, device)
+        if args.weights.lower() != "none":
+            load_weights(model, args.weights, device)
+        model_transform = model.get_transform() if hasattr(model, "get_transform") else None
+        if model_transform is not None:
+            print("Using model-provided transform (RGB, no grayscale)")
 
         print("Featurizing source images")
-        source_features = featurize(source_paths, model, device).astype(feature_dtype, copy=False)
+        source_features = featurize(source_paths, model, device, model_transform).astype(feature_dtype, copy=False)
         print("Featurizing target images")
-        target_features = featurize(target_paths, model, device).astype(feature_dtype, copy=False)
+        target_features = featurize(target_paths, model, device, model_transform).astype(feature_dtype, copy=False)
 
         cache_metadata = dict(metadata)
         cache_metadata.update(
