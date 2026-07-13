@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-Asymmetric conformal risk budgets for the three-way decision gate.
+LEGACY PROTOTYPE (historical). Asymmetric risk budgets for the three-way gate.
+
+Kept to reproduce recorded Shard-2 observations only; confirmatory work uses
+the rebuilt family-grouped implementation. Requires NCR_ALLOW_SHARD2=1.
 
 Estimand note (important): the two thresholds control class-conditional
 rates -- reject-FNR P(reject | N=1) via the positive-score lower quantile,
@@ -21,8 +24,9 @@ accept and reject thresholds get separate conformal budgets
 
 In Bayes decision-theoretic terms (Chow's rule with costs c_defer, c_FP,
 c_FN): accept iff p >= 1 - c_defer/c_FP, reject iff p <= c_defer/c_FN,
-defer otherwise. The conformal quantiles replace trust in the calibrated
-posterior with realized-risk certificates. Certifiable floor:
+defer otherwise. Quantile thresholds replace trust in the calibrated
+posterior with empirically evaluated risk targets (no certificate; see
+the estimand note above). Smallest representable budget:
 alpha >= 1/(n_calibration_class + 1).
 
 Calibration: Shard 1 only. Evaluation: Shard 2. All CPU, seeds fixed.
@@ -51,6 +55,10 @@ BUDGETS = [
 
 
 def main():
+    if os.environ.get("NCR_ALLOW_SHARD2") != "1":
+        raise SystemExit("legacy prototype reads Shard 2 (locked validation); "
+                         "set NCR_ALLOW_SHARD2=1 to run for historical "
+                         "reproduction only")
     inl1, pose1, y1 = load_shard(1)
     inl2, pose2, y2 = load_shard(2)
     X1, X2 = featurize(inl1, pose1), featurize(inl2, pose2)
@@ -66,7 +74,7 @@ def main():
     floor_rej = 1.0 / (len(pos1) + 1)
     floor_acc = 1.0 / (len(neg1) + 1)
     print(f"calibration: {len(pos1)} pos / {len(neg1)} neg | "
-          f"certifiable floors: alpha_reject >= {floor_rej:.4f}, "
+          f"smallest representable budgets: alpha_reject >= {floor_rej:.4f}, "
           f"alpha_accept >= {floor_acc:.4f}")
 
     results = {}
@@ -86,8 +94,9 @@ def main():
               f"fatal (TP auto-rejected) {r['fatal_errors_TP_auto_rejected']} | "
               f"recall w/ deferral {r['recall_counting_abstain_as_human']:.4f}")
 
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "asymmetric_gate_results.json")
+    out = os.path.join(
+        os.environ.get("NCR_OUT_DIR", os.path.dirname(os.path.abspath(__file__))),
+        "asymmetric_gate_results.json")
     with open(out, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nsaved {out}")

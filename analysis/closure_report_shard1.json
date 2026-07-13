@@ -1,0 +1,121 @@
+{
+  "shards": [
+    1
+  ],
+  "command": "analysis/transitivity_closure.py --shards 1 --out-dir /tmp/claude-0/-home-user-ImageSimilarity/8fd33d55-4d1e-5a82-89e1-8af39f5a13fb/scratchpad/closure_s1_v2",
+  "label_file_sha256": {
+    "match_manifest_shard1.csv": "f4d1d8b9512f6e47e5fa63abe27ef2646eb9d99643f194f69f5b8db43fcb313d"
+  },
+  "n_positive_pairs": 325,
+  "n_images_in_positive_graph": 514,
+  "n_components": 203,
+  "component_size_distribution": {
+    "2": 137,
+    "3": 40,
+    "4": 17,
+    "5": 4,
+    "6": 3,
+    "7": 2
+  },
+  "n_implied_pairs_full_closure": 161,
+  "n_implied_pairs_triangle_only": 159,
+  "implied_pair_kinds": {
+    "archive-archive": 140,
+    "magazine-magazine": 19,
+    "archive-magazine": 2
+  },
+  "n_label_contradictions": 1,
+  "label_contradictions": [
+    [
+      "3602-004856-0",
+      "North China Magazine 1942-1-12_Page_126_(3)"
+    ]
+  ],
+  "n_implied_pairs_ever_scored": 1,
+  "n_quarantined_components": 1,
+  "n_quarantined_pairs": 3,
+  "n_clean_candidates": 158,
+  "contradiction_witness_paths": {
+    "3602-004856-0 | North China Magazine 1942-1-12_Page_126_(3)": [
+      "3602-004856-0",
+      "North China Magazine 1942-1-12_Page_127_(1)",
+      "3602-004857-0",
+      "North China Magazine 1942-1-12_Page_126_(3)"
+    ]
+  },
+  "n_cross_issue_circulation_groups": 7,
+  "circulation_groups": [
+    {
+      "archive_prints": [
+        "3601-000649-0_(1)",
+        "3601-000685-0_(1)",
+        "3601-001449-1",
+        "3601-001449-2"
+      ],
+      "magazine_appearances": [
+        "North China Magazine 1939-6-12_Page_006_(4)",
+        "North China Magazine 1940-1-12_Page_328_(2)"
+      ]
+    },
+    {
+      "archive_prints": [
+        "3601-001011-1_(2)",
+        "3601-001011-1_(3)",
+        "3601-001058-1_(1)",
+        "3601-001058-3",
+        "3601-001058-4"
+      ],
+      "magazine_appearances": [
+        "North China Magazine 1941-1-12_Page_079_(1)",
+        "North China Magazine 1943-1-8_Page_211_(2)"
+      ]
+    },
+    {
+      "archive_prints": [
+        "3601-003113-0"
+      ],
+      "magazine_appearances": [
+        "North China Magazine 1940-1-12_Page_233_(1)",
+        "North China Magazine 1942-1-12_Page_084_(2)"
+      ]
+    },
+    {
+      "archive_prints": [
+        "3601-003673-0_(1)",
+        "3601-003674-0_(1)",
+        "3603-007115-0"
+      ],
+      "magazine_appearances": [
+        "North China Magazine 1940-1-12_Page_396_(1)",
+        "North China Magazine 1942-1-12_Page_125_(1)"
+      ]
+    },
+    {
+      "archive_prints": [
+        "3602-005090-0"
+      ],
+      "magazine_appearances": [
+        "North China Magazine 1941-1-12_Page_078",
+        "North China Magazine 1942-1-12_Page_620_(1)"
+      ]
+    },
+    {
+      "archive_prints": [
+        "3602-005979-0"
+      ],
+      "magazine_appearances": [
+        "North China Magazine 1940-1-12_Page_125_(3)",
+        "North China Magazine 1942-1-12_Page_287_(2)"
+      ]
+    },
+    {
+      "archive_prints": [
+        "3602-006210-0"
+      ],
+      "magazine_appearances": [
+        "North China Magazine 1939-6-12_Page_107",
+        "North China Magazine 1940-1-12_Page_440_(3)"
+      ]
+    }
+  ]
+}

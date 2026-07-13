@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 """
-Prototype: risk-controlled decision layer for image-match verification.
+LEGACY PROTOTYPE (historical). Risk-targeted decision layer exploration.
+
+Status: this script produced the recorded Shard-2 observations and is kept
+for reproducibility of those historical numbers ONLY. It is pair-level:
+model fitting and quantile calibration are not family-disjoint, so nothing
+here is a formal conformal certificate; read every "risk" below as a
+risk TARGET evaluated empirically. Confirmatory gate work must use the
+rebuilt family-grouped implementation, not this file.
+
+Running main() reads Shard 2 (the previously observed, locked validation
+set) and therefore requires the explicit opt-in NCR_ALLOW_SHARD2=1.
 
 Pipeline
   0. Join judge manifests (features) with human labels (Positive/Negative),
@@ -8,14 +18,14 @@ Pipeline
   1. Calibrated fusion score: logistic regression on [inlier_ratio,
      pose_component_score (imputed), pose_missing indicator], isotonic
      calibration via 5-fold CV (CalibratedClassifierCV). Fit on Shard 1 ONLY.
-  2. Split-conformal risk control for a recall (>=98%) guarantee.
+  2. Split-conformal quantile thresholds targeting a recall level.
   3. Three-way decision (accept / abstain / reject) with two conformal
      thresholds, at 2% and 1% risk targets.
   4. Risk-coverage curve: margin-based deferral at fixed abstention budgets.
 
-Calibration set: Shard 1. Evaluation set: Shard 2 (never touched for fitting).
-Guarantees are marginal (in expectation over exchangeable draws), not
-conditional; finite-sample correction uses k = floor(alpha*(n+1)).
+Calibration set: Shard 1 (in-sample scores -- a known validity gap).
+Evaluation set: Shard 2. Risk statements are targets under exchangeability,
+marginal not conditional; finite-sample index k = floor(alpha*(n+1)).
 """
 import csv
 import json
@@ -116,7 +126,7 @@ def prec_rec(y, accept):
 # ---------------------------------------------------- conformal thresholds
 def conformal_lower(pos_scores, alpha):
     """t = k-th smallest positive-class score, k = floor(alpha*(n+1)).
-    Accepting p >= t gives marginal FNR (miss rate on positives) <= alpha."""
+    Rejecting only strictly below t targets FNR <= alpha (pair-level)."""
     n = len(pos_scores)
     k = math.floor(alpha * (n + 1))
     if k < 1:            # too few calibration points to certify alpha
@@ -126,7 +136,7 @@ def conformal_lower(pos_scores, alpha):
 
 def conformal_upper(neg_scores, alpha):
     """t = k-th largest negative-class score, k = floor(alpha*(n+1)).
-    Accepting p >= t gives marginal false-accept rate on negatives <= alpha."""
+    Accepting only strictly above t targets accept-FPR <= alpha (pair-level)."""
     n = len(neg_scores)
     k = math.floor(alpha * (n + 1))
     if k < 1:
@@ -137,10 +147,12 @@ def conformal_upper(neg_scores, alpha):
 def three_way(p2, y2, t_hi, t_lo):
     """Accept p>=t_hi, reject p<=t_lo, else abstain.
 
-    If the bands cross (t_lo >= t_hi), points inside the overlap satisfy both
-    rules; they ABSTAIN (previous behavior silently let accept win)."""
-    acc = (p2 >= t_hi) & (p2 > t_lo)
-    rej = (p2 <= t_lo) & (p2 < t_hi)
+    STRICT inequalities: isotonic scores tie heavily, and inclusive
+    comparisons can spend more than the nominal tail budget on a tie mass.
+    Ties at either threshold abstain. If the bands cross (t_lo >= t_hi),
+    the overlap (and its boundary) abstains as well."""
+    acc = (p2 > t_hi) & (p2 > t_lo)
+    rej = (p2 < t_lo) & (p2 < t_hi)
     abst = ~acc & ~rej
     n = len(p2)
     prec_acc = (float(np.sum(acc & (y2 == 1)) / acc.sum()) if acc.sum() else
@@ -161,6 +173,10 @@ def three_way(p2, y2, t_hi, t_lo):
 
 
 def main():
+    if os.environ.get("NCR_ALLOW_SHARD2") != "1":
+        raise SystemExit("legacy prototype reads Shard 2 (locked validation); "
+                         "set NCR_ALLOW_SHARD2=1 to run for historical "
+                         "reproduction only")
     os.makedirs(OUT_DIR, exist_ok=True)
     results = {}
 
@@ -198,7 +214,7 @@ def main():
     alpha = 0.02
     pos1 = p1[y1 == 1]
     t = conformal_lower(pos1, alpha)
-    accept = p2 >= t
+    accept = p2 > t  # strict: ties abstain-side
     prec, rec, tp, fp, fn = prec_rec(y2, accept)
     results["conformal_recall_gate"] = dict(
         alpha=alpha, n_calib_pos=int(len(pos1)),

@@ -1,0 +1,5 @@
+# Pinned deps for the analysis prototypes (legacy) and gate tooling.
+# Smoke test:
+#   python analysis/transitivity_closure.py --shards 1 --out-dir /tmp/ncr_smoke
+numpy>=1.24,<3
+scikit-learn>=1.4,<1.7

@@ -14,8 +14,15 @@ confirmed positives, (a,c) is logically implied. This script:
   3. Classifies implied pairs as archive-archive vs magazine-magazine and
      extracts cross-issue circulation groups (same negative reproduced in
      magazine issues with different publication dates).
-  4. Writes closure_pairs.csv (the implied pairs, for geometric
-     re-verification through pipeline stages 2-4) and closure_report.json.
+  4. Quarantines every component that contains a label contradiction
+     (the conflict may sit in the Negative label OR in one of the Positive
+     edges connecting the endpoints), emits the shortest positive witness
+     path for blind re-adjudication, and writes:
+       closure_candidates_clean.csv  -- implied pairs from conflict-free
+                                        components only (downstream default)
+       closure_conflicts.csv         -- contradictions + witness paths
+       closure_report.json           -- counts, lineage (input hashes,
+                                        command line), quarantine detail
 
 Inputs: match_manifest_shard{1,2}.csv (labels) and the per-shard judge
 manifests (JSONL) — same layout as conformal_gate.py expects.
@@ -24,33 +31,59 @@ import argparse
 import collections
 import csv
 import glob
+import hashlib
 import itertools
 import json
 import os
 import re
+import sys
 
-DEFAULT_BASE = ("/tmp/claude-0/-home-user-ImageSimilarity/"
-                "8fd33d55-4d1e-5a82-89e1-8af39f5a13fb/scratchpad/jordan_drop")
+DEFAULT_BASE = os.environ.get(
+    "NCR_BASE",
+    "/tmp/claude-0/-home-user-ImageSimilarity/"
+    "8fd33d55-4d1e-5a82-89e1-8af39f5a13fb/scratchpad/jordan_drop")
 
 
 def load_labels(label_dir, shards=(1, 2)):
+    """Exactly-one file per shard; fail fast on cross-file label conflicts."""
     labels = {}
+    files = []
     for shard in shards:
         pattern = os.path.join(label_dir, "**", f"match_manifest_shard{shard}.csv")
-        paths = glob.glob(pattern, recursive=True)
-        if not paths:
-            raise FileNotFoundError(pattern)
+        paths = sorted(glob.glob(pattern, recursive=True))
+        if len(paths) != 1:
+            raise SystemExit(f"expected exactly one file for {pattern}, "
+                             f"found {len(paths)}: {paths}")
+        files.append(paths[0])
+        dup_same, conflicts = 0, []
         with open(paths[0]) as f:
             for row in csv.DictReader(f):
                 s = os.path.splitext(row["source_image"])[0]
                 t = os.path.splitext(row["target_image"])[0]
-                labels[frozenset((s, t))] = (shard, row["classification"])
-    return labels
+                key = frozenset((s, t))
+                cls = row["classification"]
+                if key in labels:
+                    if labels[key][1] == cls:
+                        dup_same += 1
+                    else:
+                        conflicts.append((sorted(key), labels[key], (shard, cls)))
+                labels[key] = (shard, cls)
+        if conflicts:
+            raise SystemExit(f"conflicting duplicate labels across inputs: {conflicts}")
+        if dup_same:
+            print(f"note: {dup_same} same-label duplicate pairs in shard {shard}",
+                  file=sys.stderr)
+    return labels, files
 
 
-def load_scored_pairs(manifest_dir):
+def load_scored_pairs(manifest_dir, shards):
+    """Only manifests whose filename names an allowed shard are read."""
     scored = set()
+    allowed = tuple(f"shard{s}" for s in shards)
     for path in glob.glob(os.path.join(manifest_dir, "**", "*.jsonl"), recursive=True):
+        if not any(a in os.path.basename(path).lower().replace(" ", "")
+                   for a in allowed):
+            continue
         with open(path) as f:
             for line in f:
                 try:
@@ -63,6 +96,32 @@ def load_scored_pairs(manifest_dir):
     return scored
 
 
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def shortest_positive_path(adj, a, b):
+    """BFS witness path between contradiction endpoints over positive edges."""
+    prev = {a: None}
+    queue = collections.deque([a])
+    while queue:
+        x = queue.popleft()
+        if x == b:
+            path = [b]
+            while prev[path[-1]] is not None:
+                path.append(prev[path[-1]])
+            return list(reversed(path))
+        for y in adj[x]:
+            if y not in prev:
+                prev[y] = x
+                queue.append(y)
+    return []
+
+
 def parse_issue_date(name):
     m = re.search(r"(\d{4})-(\d{1,2})-(\d{1,2})", name)
     return (int(m.group(1)), int(m.group(2))) if m else None
@@ -70,9 +129,13 @@ def parse_issue_date(name):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--label-dir", default=os.path.join(DEFAULT_BASE, "package"))
-    ap.add_argument("--manifest-dir", default=os.path.join(DEFAULT_BASE, "manifests"))
-    ap.add_argument("--out-dir", default=".")
+    ap.add_argument("--label-dir",
+                    default=os.environ.get("NCR_LABEL_DIR",
+                                           os.path.join(DEFAULT_BASE, "package")))
+    ap.add_argument("--manifest-dir",
+                    default=os.environ.get("NCR_MANIFEST_DIR",
+                                           os.path.join(DEFAULT_BASE, "manifests")))
+    ap.add_argument("--out-dir", default=os.environ.get("NCR_OUT_DIR", "."))
     ap.add_argument("--shards", default="1,2",
                     help="comma-separated shard labels to load (gate work: --shards 1)")
     ap.add_argument("--allow-shard2", action="store_true",
@@ -83,7 +146,7 @@ def main():
     if 2 in shards and not args.allow_shard2:
         raise SystemExit("shard 2 is the locked validation set; pass --allow-shard2 "
                          "only for descriptive (non-gate) analyses")
-    labels = load_labels(args.label_dir, shards=shards)
+    labels, label_files = load_labels(args.label_dir, shards=shards)
     pos = [tuple(k) for k, (sh, c) in labels.items() if c == "Positive"]
 
     adj = collections.defaultdict(set)
@@ -132,7 +195,7 @@ def main():
     contradictions = [tuple(sorted(p)) for p in implied
                       if labels.get(p, (None, None))[1] in ("Negative", "Unsure")]
 
-    scored = load_scored_pairs(args.manifest_dir)
+    scored = load_scored_pairs(args.manifest_dir, shards)
     implied_scored = sum(1 for p in implied if p in scored)
 
     def side(x):
@@ -153,17 +216,40 @@ def main():
                 "magazine_appearances": mags,
             })
 
+    # quarantine: every component containing a contradiction is withheld from
+    # the clean candidate list until blind re-adjudication (the error may live
+    # in the Negative label OR in a Positive edge on the witness path).
+    quarantined_roots = set()
+    witness = {}
+    for a, b in contradictions:
+        quarantined_roots.add(find(a))
+        witness[f"{a} | {b}"] = shortest_positive_path(adj, a, b)
+    quarantined_nodes = {n for r, nodes in comps.items()
+                         for n in nodes if r in quarantined_roots}
+    clean = [p for p in implied if not (set(p) & quarantined_nodes)]
+    quarantined_pairs = [p for p in implied if set(p) & quarantined_nodes]
+
     os.makedirs(args.out_dir, exist_ok=True)
-    csv_path = os.path.join(args.out_dir, "closure_pairs.csv")
+    csv_path = os.path.join(args.out_dir, "closure_candidates_clean.csv")
     with open(csv_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["image_a", "image_b", "kind"])
-        for p in sorted(implied, key=sorted):
+        for p in sorted(clean, key=sorted):
             a, b = sorted(p)
             w.writerow([a, b, "-".join(sorted(side(x) for x in p))])
+    conflicts_path = os.path.join(args.out_dir, "closure_conflicts.csv")
+    with open(conflicts_path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["image_a", "image_b", "label", "witness_path"])
+        for a, b in contradictions:
+            w.writerow([a, b, labels[frozenset((a, b))][1],
+                        " -> ".join(witness[f"{a} | {b}"])])
 
     report = {
         "shards": list(shards),
+        "command": " ".join(sys.argv),
+        "label_file_sha256": {os.path.basename(f): sha256_file(f)
+                              for f in label_files},
         "n_positive_pairs": len(pos),
         "n_images_in_positive_graph": len(adj),
         "n_components": len(comps),
@@ -174,6 +260,10 @@ def main():
         "n_label_contradictions": len(contradictions),
         "label_contradictions": contradictions,
         "n_implied_pairs_ever_scored": implied_scored,
+        "n_quarantined_components": len(quarantined_roots),
+        "n_quarantined_pairs": len(quarantined_pairs),
+        "n_clean_candidates": len(clean),
+        "contradiction_witness_paths": witness,
         "n_cross_issue_circulation_groups": len(circulation),
         "circulation_groups": circulation,
     }
@@ -184,7 +274,7 @@ def main():
     for k, v in report.items():
         if k != "circulation_groups":
             print(f"{k}: {v}")
-    print(f"wrote {csv_path} and {json_path}")
+    print(f"wrote {csv_path}, {conflicts_path} and {json_path}")
 
 
 if __name__ == "__main__":
