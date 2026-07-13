@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """
-Cost-derived asymmetric risk budgets for the three-way decision gate.
+Asymmetric conformal risk budgets for the three-way decision gate.
+
+Estimand note (important): the two thresholds control class-conditional
+rates -- reject-FNR P(reject | N=1) via the positive-score lower quantile,
+and accept-FPR P(accept | N=0) via the negative-score upper quantile.
+Neither controls the accepted-set error P(N=0 | accept), which depends on
+deployment prevalence and requires a different, family-grouped calibration.
+No cost inputs are consumed; the Chow-rule cost reading is illustrative only.
+This is a pair-level prototype: model fitting and quantile calibration are
+not family-disjoint, so no formal conformal certificate is claimed.
 
 Extends conformal_gate.py: instead of a single symmetric risk target, the
 accept and reject thresholds get separate conformal budgets

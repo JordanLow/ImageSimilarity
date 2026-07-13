@@ -29,11 +29,15 @@ from sklearn.metrics import average_precision_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-BASE = ("/tmp/claude-0/-home-user-ImageSimilarity/"
-        "8fd33d55-4d1e-5a82-89e1-8af39f5a13fb/scratchpad")
-MANIF_DIR = os.path.join(BASE, "jordan_drop/manifests/stage1_manifests")
-LABEL_DIR = os.path.join(BASE, "jordan_drop/package/stage1_pkg/data")
-OUT_DIR = os.path.join(BASE, "prototype_conformal")
+BASE = os.environ.get(
+    "NCR_BASE",
+    "/tmp/claude-0/-home-user-ImageSimilarity/"
+    "8fd33d55-4d1e-5a82-89e1-8af39f5a13fb/scratchpad")
+MANIF_DIR = os.environ.get(
+    "NCR_MANIFEST_DIR", os.path.join(BASE, "jordan_drop/manifests/stage1_manifests"))
+LABEL_DIR = os.environ.get(
+    "NCR_LABEL_DIR", os.path.join(BASE, "jordan_drop/package/stage1_pkg/data"))
+OUT_DIR = os.environ.get("NCR_OUT_DIR", os.path.join(BASE, "prototype_conformal"))
 
 POSE_IMPUTE = 10.0  # "large" pose score for missing pose (worst pose ~ few units)
 RNG_SEED = 0
@@ -131,9 +135,12 @@ def conformal_upper(neg_scores, alpha):
 
 
 def three_way(p2, y2, t_hi, t_lo):
-    """Accept p>=t_hi, reject p<=t_lo, else abstain. If bands cross, abstain."""
-    acc = p2 >= t_hi
-    rej = (p2 <= t_lo) & ~acc
+    """Accept p>=t_hi, reject p<=t_lo, else abstain.
+
+    If the bands cross (t_lo >= t_hi), points inside the overlap satisfy both
+    rules; they ABSTAIN (previous behavior silently let accept win)."""
+    acc = (p2 >= t_hi) & (p2 > t_lo)
+    rej = (p2 <= t_lo) & (p2 < t_hi)
     abst = ~acc & ~rej
     n = len(p2)
     prec_acc = (float(np.sum(acc & (y2 == 1)) / acc.sum()) if acc.sum() else

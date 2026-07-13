@@ -7,9 +7,10 @@ confirmed positives, (a,c) is logically implied. This script:
 
   1. Builds the graph of labeled positive pairs and reports its connected
      components ("exposure groups") and their size distribution.
-  2. Enumerates implied-but-never-labeled pairs (open triangles closed by
-     transitivity), checks them against existing labels for contradictions,
-     and checks whether the pipeline ever scored them.
+  2. Enumerates ALL implied pairs via full component closure (every
+     non-adjacent pair inside a positive component, any hop distance --
+     triangle-only enumeration undercounts), checks them against existing
+     labels for contradictions, and checks whether the pipeline scored them.
   3. Classifies implied pairs as archive-archive vs magazine-magazine and
      extracts cross-issue circulation groups (same negative reproduced in
      magazine issues with different publication dates).
@@ -23,6 +24,7 @@ import argparse
 import collections
 import csv
 import glob
+import itertools
 import json
 import os
 import re
@@ -71,9 +73,17 @@ def main():
     ap.add_argument("--label-dir", default=os.path.join(DEFAULT_BASE, "package"))
     ap.add_argument("--manifest-dir", default=os.path.join(DEFAULT_BASE, "manifests"))
     ap.add_argument("--out-dir", default=".")
+    ap.add_argument("--shards", default="1,2",
+                    help="comma-separated shard labels to load (gate work: --shards 1)")
+    ap.add_argument("--allow-shard2", action="store_true",
+                    help="explicit opt-in required to include shard 2 (frozen validation)")
     args = ap.parse_args()
 
-    labels = load_labels(args.label_dir)
+    shards = tuple(int(s) for s in args.shards.split(","))
+    if 2 in shards and not args.allow_shard2:
+        raise SystemExit("shard 2 is the locked validation set; pass --allow-shard2 "
+                         "only for descriptive (non-gate) analyses")
+    labels = load_labels(args.label_dir, shards=shards)
     pos = [tuple(k) for k, (sh, c) in labels.items() if c == "Positive"]
 
     adj = collections.defaultdict(set)
@@ -103,17 +113,24 @@ def main():
         comps[find(n)].append(n)
     size_dist = collections.Counter(len(v) for v in comps.values())
 
-    # implied pairs via open triangles
+    # implied pairs: FULL component closure (any hop distance), not just
+    # open triangles -- a chain A-B-C-D implies A-D as well.
     implied = set()
+    triangle_only = set()
     for b in list(adj):
         nb = sorted(adj[b])
         for i in range(len(nb)):
             for j in range(i + 1, len(nb)):
                 a, c = nb[i], nb[j]
                 if c not in adj[a]:
-                    implied.add(frozenset((a, c)))
-    contradictions = [tuple(p) for p in implied
-                      if labels.get(p, (None, None))[1] == "Negative"]
+                    triangle_only.add(frozenset((a, c)))
+    for nodes in comps.values():
+        for a, c in itertools.combinations(sorted(nodes), 2):
+            k = frozenset((a, c))
+            if labels.get(k, (None, None))[1] != "Positive":
+                implied.add(k)
+    contradictions = [tuple(sorted(p)) for p in implied
+                      if labels.get(p, (None, None))[1] in ("Negative", "Unsure")]
 
     scored = load_scored_pairs(args.manifest_dir)
     implied_scored = sum(1 for p in implied if p in scored)
@@ -146,13 +163,16 @@ def main():
             w.writerow([a, b, "-".join(sorted(side(x) for x in p))])
 
     report = {
+        "shards": list(shards),
         "n_positive_pairs": len(pos),
         "n_images_in_positive_graph": len(adj),
         "n_components": len(comps),
         "component_size_distribution": dict(sorted(size_dist.items())),
-        "n_implied_pairs": len(implied),
+        "n_implied_pairs_full_closure": len(implied),
+        "n_implied_pairs_triangle_only": len(triangle_only),
         "implied_pair_kinds": {"-".join(k): v for k, v in kinds.items()},
         "n_label_contradictions": len(contradictions),
+        "label_contradictions": contradictions,
         "n_implied_pairs_ever_scored": implied_scored,
         "n_cross_issue_circulation_groups": len(circulation),
         "circulation_groups": circulation,
