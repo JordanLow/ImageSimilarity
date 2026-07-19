@@ -5,12 +5,21 @@ Matching, Edstedt et al., CVPR 2024) instead of ASpanFormer. The output manifest
 schema and NPZ sidecar format are identical to geometry_filter.py, so vggt_signals.py
 (Step 3) and pose_scoring.py (Step 4) run completely unchanged.
 
-RoMa produces a dense correspondence warp field rather than sparse keypoints. This
-script samples `--n-matches` highest-certainty point pairs from the warp, then applies
-the same RANSAC step as geometry_filter.py and geometry_filter_lightglue.py.
+RoMa produces a dense correspondence warp field rather than sparse keypoints. RoMa's
+own `model.sample(num=n_matches)` draws a *fixed* count regardless of match quality
+(certainty only controls which points are drawn, never how many) -- confirmed against
+upstream source -- which makes raw/filtered keypoint counts constant and useless as a
+Stage 2 signal. This script instead selects every correspondence whose RoMa certainty
+clears `--certainty-threshold`, so raw counts vary with match quality exactly the way
+they do for ASpanFormer/LightGlue's sparse keypoints. `--n-matches` now only caps how
+many of those above-threshold points are kept (subsampled by certainty weight if more
+clear the threshold than the cap), purely for RANSAC/runtime sanity, not as a quality
+filter. Then applies the same RANSAC step as geometry_filter.py and
+geometry_filter_lightglue.py. See ablation/ROMA_ABLATION_METHODOLOGY.md for the full
+rationale and accepted trade-offs of this design.
 
 As a result:
-  raw_keypoint_count      = n_matches (samples taken before RANSAC)
+  raw_keypoint_count      = correspondences above --certainty-threshold (capped at --n-matches)
   filtered_keypoint_count = RANSAC inlier count
 
 Requirements:
@@ -22,6 +31,7 @@ Usage (Colab):
         --output-dir    /path/to/roma_output/ \\
         --breakpoint-value 50 \\
         [--long-dim 1024] \\
+        [--certainty-threshold 0.05] \\
         [--n-matches 5000] \\
         [--resume]
 """
@@ -187,6 +197,7 @@ def run_roma_pair(
     long_dim: int,
     device: torch.device,
     n_matches: int = 5000,
+    certainty_threshold: float = 0.05,
 ) -> dict[str, Any]:
     """Run RoMa on one image pair.
 
@@ -196,7 +207,8 @@ def run_roma_pair(
     Strategy:
       1. Resize both images to long_dim (same as production pipeline).
       2. Feed resized PIL images to RoMa → dense warp + certainty map.
-      3. Sample n_matches highest-certainty correspondences from the warp.
+      3. Keep every correspondence whose certainty clears certainty_threshold (not a
+         fixed-count sample -- see module docstring), capped at n_matches points.
       4. Convert from RoMa's normalised [-1,1] coords to pixel coords in resized space.
       5. Run fundamental-matrix RANSAC (same parameters as geometry_filter.py).
     """
@@ -225,14 +237,35 @@ def run_roma_pair(
     with torch.inference_mode():
         # Dense warp: coordinates are relative to the resized images we passed.
         warp, certainty = model.match(src_pil, tgt_pil, device=device)
-        # matches: (n_matches, 4) normalised [-1,1] — (xA, yA, xB, yB)
-        matches, _ = model.sample(warp, certainty, num=n_matches)
-        # to_pixel_coordinates (NOT to_pixel_coords -- that method doesn't exist on
-        # the matcher) returns a tuple of two (N, 2) tensors, not one (N, 4) tensor.
-        kpts0_t, kpts1_t = model.to_pixel_coordinates(matches, rh0, rw0, rh1, rw1)
+        # Keep every correspondence whose certainty clears certainty_threshold, instead
+        # of RoMa's own model.sample(num=...), which always draws a fixed count
+        # regardless of match quality -- certainty controls which points are drawn,
+        # never how many (confirmed against upstream source). certainty is a
+        # post-sigmoid probability in [0, 1]. This makes raw_keypoint_count vary with
+        # match quality the same way it does for ASpanFormer/LightGlue's sparse
+        # keypoints, instead of being pinned at n_matches for every pair.
+        flat_warp = warp.reshape(-1, 4)          # (xA, yA, xB, yB) normalised [-1, 1]
+        flat_certainty = certainty.reshape(-1)
+        above_thresh = flat_certainty > certainty_threshold
+        n_above = int(above_thresh.sum().item())
 
-    raw0 = kpts0_t.cpu().numpy().astype(np.float32)  # (n_matches, 2) [x, y]
-    raw1 = kpts1_t.cpu().numpy().astype(np.float32)
+        if n_above > 0:
+            candidate_matches = flat_warp[above_thresh]
+            if n_above > n_matches:
+                # n_matches is now just a cap for RANSAC/runtime sanity -- quality
+                # filtering already happened via the threshold above.
+                keep_idx = torch.multinomial(
+                    flat_certainty[above_thresh], num_samples=n_matches, replacement=False,
+                )
+                candidate_matches = candidate_matches[keep_idx]
+            # to_pixel_coordinates (NOT to_pixel_coords -- that method doesn't exist on
+            # the matcher) returns a tuple of two (N, 2) tensors, not one (N, 4) tensor.
+            kpts0_t, kpts1_t = model.to_pixel_coordinates(candidate_matches, rh0, rw0, rh1, rw1)
+            raw0 = kpts0_t.cpu().numpy().astype(np.float32)  # (N, 2) [x, y]
+            raw1 = kpts1_t.cpu().numpy().astype(np.float32)
+        else:
+            raw0 = np.empty((0, 2), dtype=np.float32)
+            raw1 = np.empty((0, 2), dtype=np.float32)
 
     raw_count = int(len(raw0))
 
@@ -310,7 +343,8 @@ def process(args: argparse.Namespace) -> None:
         passed_manifest.write_text("", encoding="utf-8")
 
     print(f"Device: {device}")
-    print(f"Loading RoMa outdoor (n_matches={args.n_matches}) ...")
+    print(f"Loading RoMa outdoor (n_matches={args.n_matches}, "
+          f"certainty_threshold={args.certainty_threshold}) ...")
     model = load_roma(device)
     print("RoMa loaded.")
 
@@ -337,7 +371,7 @@ def process(args: argparse.Namespace) -> None:
             match = run_roma_pair(
                 model,
                 source_path, target_path,
-                args.long_dim, device, args.n_matches,
+                args.long_dim, device, args.n_matches, args.certainty_threshold,
             )
             runtime = time.perf_counter() - start
             is_pass = match["filtered_keypoint_count"] >= args.breakpoint_value
@@ -346,6 +380,7 @@ def process(args: argparse.Namespace) -> None:
             audit_row.update({
                 "matcher":          "roma_outdoor",
                 "n_matches_cfg":    args.n_matches,
+                "certainty_threshold_cfg": args.certainty_threshold,
                 "aspan_pass":       bool(is_pass),        # field name kept for vggt_signals.py compat
                 "breakpoint_value": int(args.breakpoint_value),
                 "raw_keypoint_count":      int(match["raw_keypoint_count"]),
@@ -406,8 +441,14 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--breakpoint-value", type=int, default=50,
                    help="Min RANSAC-filtered keypoint count to pass Filter 1 (default: 50)")
     p.add_argument("--long-dim",  type=int, default=1024, help="Resize long edge to this many pixels")
+    p.add_argument("--certainty-threshold", type=float, default=0.05,
+                   help="Min RoMa certainty [0,1] for a correspondence to be kept before RANSAC "
+                        "(default: 0.05, RoMa's own author-chosen sample_thresh default). Empirically "
+                        "tune this -- see ablation/ROMA_ABLATION_METHODOLOGY.md.")
     p.add_argument("--n-matches", type=int, default=5000,
-                   help="Correspondences to sample from RoMa dense warp before RANSAC (default: 5000)")
+                   help="Cap on correspondences kept after --certainty-threshold filtering, "
+                        "subsampled by certainty weight if more clear the threshold (default: 5000). "
+                        "This is a RANSAC/runtime sanity cap, not a quality filter.")
     p.add_argument("--device", default="auto", help="auto, cuda, or cpu")
     p.add_argument("--all-manifest-name",    default="roma_all_manifest.jsonl")
     p.add_argument("--passed-manifest-name", default="vggt_candidates_manifest.jsonl",

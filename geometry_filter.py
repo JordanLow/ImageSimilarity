@@ -36,6 +36,8 @@ import cv2
 import numpy as np
 import torch
 
+import aspan_batching
+
 RANSAC_SEED = 0  # cv2.setRNGSeed is called before each RANSAC call for determinism
 
 
@@ -125,6 +127,43 @@ def keypoints_to_original(coords: np.ndarray, scale: float) -> np.ndarray:
     return (coords.astype(np.float32) / float(scale)).astype(np.float32)
 
 
+def run_ransac(raw0: np.ndarray, raw1: np.ndarray) -> dict[str, Any]:
+    """RANSAC filtering step, shared by the per-pair (run_aspan_pair) and
+    batched (aspan_batching.run_aspan_batch) matcher paths -- CPU-only, fast,
+    pair-independent, unchanged by batching."""
+    raw_count = int(len(raw0))
+    fundamental = None
+    mask = np.zeros(raw_count, dtype=bool)
+    filtered0 = np.empty((0, 2), dtype=np.float32)
+    filtered1 = np.empty((0, 2), dtype=np.float32)
+    ransac_error = None
+
+    if raw_count >= 8:
+        try:
+            cv2.setRNGSeed(RANSAC_SEED)
+            fundamental, mask_raw = cv2.findFundamentalMat(
+                raw0, raw1, method=cv2.FM_RANSAC, ransacReprojThreshold=1
+            )
+            if mask_raw is not None:
+                mask = mask_raw[:, 0].astype(bool)
+            filtered0 = raw0[mask].astype(np.float32)
+            filtered1 = raw1[mask].astype(np.float32)
+        except cv2.error as exc:
+            ransac_error = str(exc)
+    else:
+        ransac_error = f"not enough raw keypoints for RANSAC: {raw_count}"
+
+    return {
+        "filtered_mkpts0_resized": filtered0,
+        "filtered_mkpts1_resized": filtered1,
+        "ransac_mask": mask.astype(np.uint8),
+        "fundamental_matrix": None if fundamental is None else fundamental.astype(np.float32),
+        "raw_keypoint_count": raw_count,
+        "filtered_keypoint_count": int(len(filtered0)),
+        "ransac_error": ransac_error,
+    }
+
+
 def run_aspan_pair(
     matcher,
     source_path: str,
@@ -156,27 +195,7 @@ def run_aspan_pair(
         raw0 = data["mkpts0_f"].detach().cpu().numpy().astype(np.float32)
         raw1 = data["mkpts1_f"].detach().cpu().numpy().astype(np.float32)
 
-    raw_count = int(len(raw0))
-    fundamental = None
-    mask = np.zeros(raw_count, dtype=bool)
-    filtered0 = np.empty((0, 2), dtype=np.float32)
-    filtered1 = np.empty((0, 2), dtype=np.float32)
-    ransac_error = None
-
-    if raw_count >= 8:
-        try:
-            cv2.setRNGSeed(RANSAC_SEED)
-            fundamental, mask_raw = cv2.findFundamentalMat(
-                raw0, raw1, method=cv2.FM_RANSAC, ransacReprojThreshold=1
-            )
-            if mask_raw is not None:
-                mask = mask_raw[:, 0].astype(bool)
-            filtered0 = raw0[mask].astype(np.float32)
-            filtered1 = raw1[mask].astype(np.float32)
-        except cv2.error as exc:
-            ransac_error = str(exc)
-    else:
-        ransac_error = f"not enough raw keypoints for RANSAC: {raw_count}"
+    ransac = run_ransac(raw0, raw1)
 
     return {
         "source_original_size": [int(w0), int(h0)],
@@ -189,15 +208,9 @@ def run_aspan_pair(
         "raw_mkpts1_resized": raw1,
         "raw_mkpts0_original": keypoints_to_original(raw0, scale0),
         "raw_mkpts1_original": keypoints_to_original(raw1, scale1),
-        "filtered_mkpts0_resized": filtered0,
-        "filtered_mkpts1_resized": filtered1,
-        "filtered_mkpts0_original": keypoints_to_original(filtered0, scale0),
-        "filtered_mkpts1_original": keypoints_to_original(filtered1, scale1),
-        "ransac_mask": mask.astype(np.uint8),
-        "fundamental_matrix": None if fundamental is None else fundamental.astype(np.float32),
-        "raw_keypoint_count": raw_count,
-        "filtered_keypoint_count": int(len(filtered0)),
-        "ransac_error": ransac_error,
+        "filtered_mkpts0_original": keypoints_to_original(ransac["filtered_mkpts0_resized"], scale0),
+        "filtered_mkpts1_original": keypoints_to_original(ransac["filtered_mkpts1_resized"], scale1),
+        **ransac,
     }
 
 
@@ -263,61 +276,28 @@ def process(args: argparse.Namespace) -> None:
         passed_manifest.write_text("", encoding="utf-8")
 
     matcher = load_aspanformer(args.aspanpath, args.config_path, args.weights_path, device)
-    checked = passed = skipped = failed = 0
+    counters = {"checked": 0, "passed": 0, "skipped": 0, "failed": 0}
 
-    for _line_no, candidate in read_jsonl(args.input_manifest):
+    def pending_candidates() -> Iterable[dict[str, Any]]:
+        for _line_no, candidate in read_jsonl(args.input_manifest):
+            candidate_id = str(candidate.get("candidate_id"))
+            if args.resume and candidate_id in processed_ids:
+                counters["skipped"] += 1
+                continue
+            if args.max_pairs is not None and counters["checked"] >= args.max_pairs:
+                return
+            counters["checked"] += 1
+            yield candidate
+
+    def handle_result(
+        candidate: dict[str, Any], match: dict[str, Any] | None, error: str | None, runtime: float
+    ) -> None:
         candidate_id = str(candidate.get("candidate_id"))
-        if args.resume and candidate_id in processed_ids:
-            skipped += 1
-            continue
-        if args.max_pairs is not None and checked >= args.max_pairs:
-            break
-
-        source_path = candidate.get("source_path")
-        target_path = candidate.get("target_path")
-        checked += 1
-        start = time.perf_counter()
         base = row_base(candidate)
 
-        try:
-            if not source_path or not target_path:
-                raise ValueError("candidate row missing source_path or target_path")
-            match = run_aspan_pair(matcher, source_path, target_path, args.long_dim, device)
-            runtime = time.perf_counter() - start
-            is_pass = int(match["filtered_keypoint_count"]) >= int(args.breakpoint_value)
-
-            audit_row = dict(base)
-            audit_row.update(
-                {
-                    "aspan_pass": bool(is_pass),
-                    "breakpoint_value": int(args.breakpoint_value),
-                    "raw_keypoint_count": int(match["raw_keypoint_count"]),
-                    "filtered_keypoint_count": int(match["filtered_keypoint_count"]),
-                    "source_original_size": match["source_original_size"],
-                    "target_original_size": match["target_original_size"],
-                    "source_resized_size": match["source_resized_size"],
-                    "target_resized_size": match["target_resized_size"],
-                    "source_scale": match["source_scale"],
-                    "target_scale": match["target_scale"],
-                    "runtime_seconds": runtime,
-                    "error": match["ransac_error"],
-                }
-            )
-
-            if is_pass:
-                passed += 1
-                sidecar_path = sidecar_dir / sidecar_name(candidate_id, source_path, target_path)
-                save_sidecar(sidecar_path, match)
-                audit_row["sidecar_path"] = norm_path(sidecar_path)
-                if candidate_id not in passed_ids:
-                    append_jsonl(passed_manifest, audit_row)
-                    passed_ids.add(candidate_id)
-
-            append_jsonl(all_manifest, audit_row)
-        except Exception as exc:  # keep batch runs alive; record pair-level failures
-            failed += 1
-            runtime = time.perf_counter() - start
-            print(f"  [FAIL] {candidate_id}: {type(exc).__name__}: {exc}")
+        if error is not None:
+            counters["failed"] += 1
+            print(f"  [FAIL] {candidate_id}: {error}")
             error_row = dict(base)
             error_row.update(
                 {
@@ -327,15 +307,100 @@ def process(args: argparse.Namespace) -> None:
                     "raw_keypoint_count": 0,
                     "filtered_keypoint_count": 0,
                     "runtime_seconds": runtime,
-                    "error": f"{type(exc).__name__}: {exc}",
+                    "error": error,
                 }
             )
             append_jsonl(all_manifest, error_row)
+            if counters["checked"] % args.progress_every == 0:
+                print(f"checked={counters['checked']} passed={counters['passed']} failed={counters['failed']} skipped={counters['skipped']}")
+            return
 
-        if checked % args.progress_every == 0:
-            print(f"checked={checked} passed={passed} failed={failed} skipped={skipped}")
+        source_path = candidate.get("source_path")
+        target_path = candidate.get("target_path")
+        is_pass = int(match["filtered_keypoint_count"]) >= int(args.breakpoint_value)
 
-    print(f"Done. checked={checked} passed={passed} failed={failed} skipped={skipped}")
+        audit_row = dict(base)
+        audit_row.update(
+            {
+                "aspan_pass": bool(is_pass),
+                "breakpoint_value": int(args.breakpoint_value),
+                "raw_keypoint_count": int(match["raw_keypoint_count"]),
+                "filtered_keypoint_count": int(match["filtered_keypoint_count"]),
+                "source_original_size": match["source_original_size"],
+                "target_original_size": match["target_original_size"],
+                "source_resized_size": match["source_resized_size"],
+                "target_resized_size": match["target_resized_size"],
+                "source_scale": match["source_scale"],
+                "target_scale": match["target_scale"],
+                "runtime_seconds": runtime,
+                "error": match["ransac_error"],
+            }
+        )
+
+        if is_pass:
+            counters["passed"] += 1
+            sidecar_path = sidecar_dir / sidecar_name(candidate_id, source_path, target_path)
+            save_sidecar(sidecar_path, match)
+            audit_row["sidecar_path"] = norm_path(sidecar_path)
+            if candidate_id not in passed_ids:
+                append_jsonl(passed_manifest, audit_row)
+                passed_ids.add(candidate_id)
+
+        append_jsonl(all_manifest, audit_row)
+        if counters["checked"] % args.progress_every == 0:
+            print(f"checked={counters['checked']} passed={counters['passed']} failed={counters['failed']} skipped={counters['skipped']}")
+
+    if args.batch_size <= 1:
+        # Default path, byte-for-byte identical to the pre-batching code:
+        # one ASpanFormer forward pass per pair, in order.
+        for candidate in pending_candidates():
+            source_path = candidate.get("source_path")
+            target_path = candidate.get("target_path")
+            start = time.perf_counter()
+            try:
+                if not source_path or not target_path:
+                    raise ValueError("candidate row missing source_path or target_path")
+                match = run_aspan_pair(matcher, source_path, target_path, args.long_dim, device)
+                handle_result(candidate, match, None, time.perf_counter() - start)
+            except Exception as exc:  # keep runs alive; record pair-level failures
+                handle_result(candidate, None, f"{type(exc).__name__}: {exc}", time.perf_counter() - start)
+    else:
+        # Batched path: candidates are first grouped by their exact post-resize
+        # (source_shape, target_shape) -- see aspan_batching's module docstring
+        # for why. Every resulting group can be chunked into batches of up to
+        # --batch-size with zero padding needed, which is what keeps this safe
+        # (padding a batch of genuinely different shapes together was found to
+        # corrupt keypoints near the padded boundary -- not exercised here by
+        # construction). Per-pair runtime_seconds is an average over the chunk
+        # (real GPU work is fused, not isolable per pair) -- everything else
+        # (audit rows, sidecars, manifests, RANSAC) is identical to the
+        # batch_size<=1 path.
+        def flush(chunk_rows: list[dict[str, Any]]) -> None:
+            if not chunk_rows:
+                return
+            start = time.perf_counter()
+            results = aspan_batching.run_aspan_batch(
+                matcher, chunk_rows, args.long_dim, device, resize_with_scale, keypoints_to_original, run_ransac
+            )
+            per_row_runtime = (time.perf_counter() - start) / len(chunk_rows)
+            for candidate, result in zip(chunk_rows, results):
+                if "error" in result:
+                    handle_result(candidate, None, result["error"], per_row_runtime)
+                else:
+                    handle_result(candidate, result, None, per_row_runtime)
+
+        buckets, unresolved = aspan_batching.bucket_candidates(pending_candidates(), args.long_dim, resize_with_scale)
+        print(f"Grouped {sum(len(v) for v in buckets.values())} candidates into {len(buckets)} shape buckets "
+              f"({len(unresolved)} unresolved -- unreadable source/target image).")
+
+        for candidate, error in unresolved:
+            handle_result(candidate, None, error, 0.0)
+
+        for bucket_rows in buckets.values():
+            for i in range(0, len(bucket_rows), args.batch_size):
+                flush(bucket_rows[i : i + args.batch_size])
+
+    print(f"Done. checked={counters['checked']} passed={counters['passed']} failed={counters['failed']} skipped={counters['skipped']}")
     print(f"All-pairs manifest: {all_manifest}")
     print(f"VGGT candidates: {passed_manifest}")
     print(f"Sidecars: {sidecar_dir}")
@@ -350,6 +415,13 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--weights_path", type=str, default="./weights/outdoor.ckpt")
     parser.add_argument("--config_path", type=str, default="./ml-aspanformer/configs/aspan/outdoor/aspan_test.py")
     parser.add_argument("--long_dim", type=int, default=1024)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        help="Number of candidate pairs to run through one ASpanFormer forward pass. "
+        "Default 1 preserves the exact pre-batching per-pair code path unchanged.",
+    )
     parser.add_argument("--device", default="auto", help="auto, cuda, or cpu")
     parser.add_argument("--all-manifest-name", default="aspan_all_manifest.jsonl")
     parser.add_argument("--passed-manifest-name", default="vggt_candidates_manifest.jsonl")

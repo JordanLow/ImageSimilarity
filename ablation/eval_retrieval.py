@@ -1,13 +1,22 @@
-"""Table A retrieval evaluation: Recall@K and mAP for DINO, SSCD, CLIP.
+"""Table A retrieval evaluation: Recall@K and mAP for DINO, SSCD, CLIP, raw DINOv3,
+and JOCCH (the original ViT ensemble).
 
 For each model, computes:
   Recall@K  (K = 1, 5, 10, 15, 50): fraction of queries where the true copy
             appears in the model's top-K candidates.
   mAP:      mean average precision; for queries with one GT+ target, this equals
             mean reciprocal rank (MRR) truncated at max_k.
+  95% CI:   bootstrap confidence interval on both, resampling queries (10,000
+            resamples, seed 42 — same convention as ablation/statistics.py's
+            bootstrap_ci) per the strategy report's §6.8 "every table gets CIs".
 
 Denominator: the set of source images that have at least one labeled GT+ target.
 A source with no labeled GT+ target is excluded (we cannot measure recall for it).
+
+Per-query results (one row per source: hit/miss at each K, AP) are persisted via
+--per-query-dir so Table A's numbers are independently auditable and re-testable
+without rerunning this script — the same "persist per-example decisions, not just
+aggregates" principle ablation/STATISTICS_METHODOLOGY.md establishes for Stage 2/3.
 
 Two-pass design:
   Pass 1 (conservative): uses only existing GT labels from the Shard CSVs.
@@ -18,18 +27,22 @@ Two-pass design:
          export_retrieval_candidates.py). Use this for the final Table A numbers.
 
 Usage (conservative pass, preliminary numbers):
-    python _local/eval_retrieval.py \\
+    python ablation/eval_retrieval.py \\
         --dino-manifests "D:/DINO OUTPUTS/retrieval_manifest_shard1.jsonl" \\
                          "D:/DINO OUTPUTS/retrieval_manifest_shard2.jsonl" \\
         --sscd-manifests "D:/DINO OUTPUTS/sscd_shard1.jsonl" \\
                          "D:/DINO OUTPUTS/sscd_shard2.jsonl" \\
         --clip-manifests "D:/DINO OUTPUTS/clip_shard1.jsonl" \\
                          "D:/DINO OUTPUTS/clip_shard2.jsonl" \\
+        --dinov3raw-manifests "D:/DINO OUTPUTS/dinov3raw_shard1.jsonl" \\
+                              "D:/DINO OUTPUTS/dinov3raw_shard2.jsonl" \\
+        --jocch-manifests "D:/DINO OUTPUTS/jocch_shard1.jsonl" \\
+                          "D:/DINO OUTPUTS/jocch_shard2.jsonl" \\
         --gt-csv "D:/DINO OUTPUTS/match_manifest_shard1.csv" \\
                  "D:/DINO OUTPUTS/match_manifest_shard2.csv"
 
 Usage (complete pass, after labeling new candidates):
-    python _local/eval_retrieval.py ... \\
+    python ablation/eval_retrieval.py ... \\
         --new-labels "D:/DINO OUTPUTS/retrieval_review/new_candidates_sscd_labeled.csv" \\
                      "D:/DINO OUTPUTS/retrieval_review/new_candidates_clip_labeled.csv"
 """
@@ -38,22 +51,27 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from pathlib import Path
-from typing import Optional
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).parent))
+from ablation_utils import load_ground_truth
+
+N_BOOT    = 10_000
+BOOT_SEED = 42
 
 
 # ── Ground truth loading ───────────────────────────────────────────────────────
 
 def load_gt(csv_paths: list[Path]) -> dict[tuple[str, str], str]:
-    """Returns {(source_id, target_id): label} from Shard CSVs."""
+    """Returns {(source_id, target_id): label} from Shard CSVs. Thin wrapper around
+    ablation_utils.load_ground_truth (the canonical GT loader) so CSV parsing isn't
+    duplicated across scripts."""
     gt: dict[tuple[str, str], str] = {}
     for p in csv_paths:
-        with open(p, newline="", encoding="utf-8") as f:
-            for row in csv.DictReader(f):
-                src = row["source_folder"].strip()
-                tgt = Path(row["target_image"].strip()).stem
-                label = row["classification"].strip()
-                gt[(src, tgt)] = label
+        gt.update(load_ground_truth(p))
     return gt
 
 
@@ -106,68 +124,112 @@ def build_ranked_lists(
 
 # ── Metrics ────────────────────────────────────────────────────────────────────
 
-def recall_at_k(
+def compute_per_query(
     ranked: dict[str, list[tuple[int, str, float]]],
     gt_positives: dict[str, set[str]],
-    k: int,
-) -> Optional[float]:
-    """Recall@K over queries that have at least one GT+ target.
+    ks: tuple[int, ...],
+) -> list[dict]:
+    """One row per query source: recall_at_{k} (0/1) for each k, plus AP.
 
-    For each source with a known GT+: 1 if any GT+ target appears in top-K, else 0.
+    This is computed once and shared by the point-estimate aggregation, the
+    bootstrap CI, and the persisted per-query JSONL — no metric is computed two
+    different ways.
+
+    AP for a query with n_rel GT+ targets, truncated at max(ks):
+      AP = (1/n_rel) * sum_{r=1}^{max_k} [rel(r) * P@r], P@r = (# GT+ in top-r) / r
     """
-    hits = total = 0
+    max_k = max(ks)
+    rows: list[dict] = []
     for src, pos_targets in gt_positives.items():
         candidates = ranked.get(src, [])
-        top_k_targets = {tgt for rank, tgt, _ in candidates if rank <= k}
-        if top_k_targets & pos_targets:
-            hits += 1
-        total += 1
-    if total == 0:
-        return None
-    return hits / total
+        row: dict = {"source_id": src, "n_gt_positive": len(pos_targets)}
+        for k in ks:
+            top_k_targets = {tgt for rank, tgt, _ in candidates if rank <= k}
+            row[f"recall_at_{k}"] = 1 if (top_k_targets & pos_targets) else 0
 
-
-def mean_ap(
-    ranked: dict[str, list[tuple[int, str, float]]],
-    gt_positives: dict[str, set[str]],
-    max_k: int = 50,
-) -> Optional[float]:
-    """mAP over queries with at least one GT+ target, truncated at max_k.
-
-    For a query with n_rel GT+ targets in the ranked list:
-      AP = (1/n_rel) * sum_{r=1}^{max_k} [rel(r) * P@r]
-    where P@r = (# GT+ in top-r) / r.
-    """
-    aps = []
-    for src, pos_targets in gt_positives.items():
-        candidates = [(rank, tgt) for rank, tgt, _ in ranked.get(src, []) if rank <= max_k]
+        truncated = [(rank, tgt) for rank, tgt, _ in candidates if rank <= max_k]
         n_rel = len(pos_targets)
-        if n_rel == 0:
-            continue
         hits = prec_sum = 0
-        for rank, tgt in sorted(candidates, key=lambda x: x[0]):
+        for rank, tgt in sorted(truncated, key=lambda x: x[0]):
             if tgt in pos_targets:
                 hits += 1
                 prec_sum += hits / rank
-        ap = prec_sum / n_rel
-        aps.append(ap)
-    if not aps:
-        return None
-    return sum(aps) / len(aps)
+        row["ap"] = (prec_sum / n_rel) if n_rel else None
+        rows.append(row)
+    return rows
+
+
+def aggregate_metrics(per_query_rows: list[dict], ks: tuple[int, ...]) -> dict:
+    """Point-estimate Recall@K / mAP from compute_per_query's output."""
+    result: dict = {}
+    n = len(per_query_rows)
+    for k in ks:
+        result[f"Recall@{k}"] = (
+            sum(r[f"recall_at_{k}"] for r in per_query_rows) / n if n else None
+        )
+    aps = [r["ap"] for r in per_query_rows if r["ap"] is not None]
+    result["mAP"] = sum(aps) / len(aps) if aps else None
+    result["n_queries"] = n
+    return result
+
+
+def bootstrap_ci(
+    per_query_rows: list[dict],
+    ks: tuple[int, ...],
+    n_boot: int = N_BOOT,
+    seed: int = BOOT_SEED,
+) -> dict:
+    """Bootstrap 95% CIs for Recall@K (each k) and mAP, resampling query sources
+    with replacement. Same n_boot/seed convention as ablation/statistics.py's
+    bootstrap_ci, for consistency across the project's tables."""
+    n = len(per_query_rows)
+    out: dict = {}
+    if n == 0:
+        for k in ks:
+            out[f"Recall@{k}_ci"] = (float("nan"), float("nan"))
+        out["mAP_ci"] = (float("nan"), float("nan"))
+        return out
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, n, size=(n_boot, n))  # (n_boot, n) resample indices
+
+    for k in ks:
+        vec = np.array([r[f"recall_at_{k}"] for r in per_query_rows], dtype=np.float64)
+        samples = vec[idx].mean(axis=1)
+        lo, hi = np.percentile(samples, [2.5, 97.5])
+        out[f"Recall@{k}_ci"] = (float(lo), float(hi))
+
+    ap_vec = np.array(
+        [r["ap"] if r["ap"] is not None else np.nan for r in per_query_rows], dtype=np.float64
+    )
+    ap_samples = np.nanmean(ap_vec[idx], axis=1)
+    ap_samples = ap_samples[~np.isnan(ap_samples)]
+    if len(ap_samples):
+        lo, hi = np.percentile(ap_samples, [2.5, 97.5])
+        out["mAP_ci"] = (float(lo), float(hi))
+    else:
+        out["mAP_ci"] = (float("nan"), float("nan"))
+    return out
+
+
+def save_per_query_jsonl(per_query_rows: list[dict], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for row in per_query_rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def compute_model_metrics(
     ranked: dict[str, list[tuple[int, str, float]]],
     gt_positives: dict[str, set[str]],
     ks: tuple[int, ...] = (1, 5, 10, 15, 50),
-) -> dict:
-    result: dict = {}
-    for k in ks:
-        r = recall_at_k(ranked, gt_positives, k)
-        result[f"Recall@{k}"] = r
-    result["mAP"] = mean_ap(ranked, gt_positives, max_k=max(ks))
-    result["n_queries"] = len(gt_positives)
-    return result
+) -> tuple[dict, list[dict]]:
+    """Returns (point_estimate + CI dict, per_query_rows) — per_query_rows is
+    exposed so callers can persist it."""
+    per_query_rows = compute_per_query(ranked, gt_positives, ks)
+    result = aggregate_metrics(per_query_rows, ks)
+    result.update(bootstrap_ci(per_query_rows, ks))
+    return result, per_query_rows
 
 
 def format_pct(v) -> str:
@@ -192,6 +254,30 @@ def print_table(results: dict[str, dict], ks: tuple[int, ...]) -> None:
     print("")
 
 
+def format_ci(ci) -> str:
+    if ci is None:
+        return "n/a"
+    lo, hi = ci
+    if lo != lo or hi != hi:  # NaN check without importing math
+        return "n/a"
+    return f"[{lo * 100:.2f}, {hi * 100:.2f}]"
+
+
+def print_ci_table(results: dict[str, dict], ks: tuple[int, ...]) -> None:
+    col_w = 20
+    headers = ["Model"] + [f"R@{k} 95% CI" for k in ks] + ["mAP 95% CI"]
+    print(f"95% bootstrap CIs ({N_BOOT} resamples, seed {BOOT_SEED}, resampled over query sources):")
+    print("  ".join(h.ljust(col_w) for h in headers))
+    print("  ".join("-" * col_w for _ in headers))
+    for model_name, metrics in results.items():
+        row = [model_name.ljust(col_w)]
+        for k in ks:
+            row.append(format_ci(metrics.get(f"Recall@{k}_ci")).ljust(col_w))
+        row.append(format_ci(metrics.get("mAP_ci")).ljust(col_w))
+        print("  ".join(row))
+    print("")
+
+
 def save_json(results: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -208,6 +294,10 @@ def parse_args(argv=None) -> argparse.Namespace:
                    help="SSCD retrieval manifest JSONL files.")
     p.add_argument("--clip-manifests", nargs="+", default=[],
                    help="CLIP retrieval manifest JSONL files.")
+    p.add_argument("--dinov3raw-manifests", nargs="+", default=[],
+                   help="Raw DINOv3 (no head/ensemble) retrieval manifest JSONL files.")
+    p.add_argument("--jocch-manifests", nargs="+", default=[],
+                   help="JOCCH (original ViT ensemble) retrieval manifest JSONL files.")
     p.add_argument("--gt-csv", nargs="+", required=True,
                    help="Ground-truth label CSVs (Shard 1 + Shard 2).")
     p.add_argument("--new-labels", nargs="+", default=[],
@@ -216,6 +306,10 @@ def parse_args(argv=None) -> argparse.Namespace:
                    help="Optional path to save results as JSON.")
     p.add_argument("--ks", nargs="+", type=int, default=[1, 5, 10, 15, 50],
                    help="K values for Recall@K. Default: 1 5 10 15 50.")
+    p.add_argument("--per-query-dir", type=str, default="",
+                   help="Optional directory to write one {model}.jsonl per model with "
+                        "per-source recall_at_{k}/ap rows -- makes Table A auditable and "
+                        "re-testable without rerunning this script.")
     return p.parse_args(argv)
 
 
@@ -244,9 +338,11 @@ def main(argv=None) -> None:
 
     # Build ranked lists for each model and evaluate
     models_to_run: list[tuple[str, list[str]]] = [
-        ("DINO",  args.dino_manifests),
-        ("SSCD",  args.sscd_manifests),
-        ("CLIP",  args.clip_manifests),
+        ("DINO",      args.dino_manifests),
+        ("SSCD",      args.sscd_manifests),
+        ("CLIP",      args.clip_manifests),
+        ("DINOv3Raw", args.dinov3raw_manifests),
+        ("JOCCH",     args.jocch_manifests),
     ]
 
     all_results: dict[str, dict] = {}
@@ -262,8 +358,13 @@ def main(argv=None) -> None:
         rows = load_manifest(paths)
         print(f"  {len(rows)} candidate rows loaded")
         ranked = build_ranked_lists(rows)
-        metrics = compute_model_metrics(ranked, gt_positives, ks)
+        metrics, per_query_rows = compute_model_metrics(ranked, gt_positives, ks)
         all_results[model_name] = metrics
+
+        if args.per_query_dir:
+            out_path = Path(args.per_query_dir) / f"{model_name}.jsonl"
+            save_per_query_jsonl(per_query_rows, out_path)
+            print(f"  Per-query rows saved: {out_path}")
 
         # Per-model coverage report
         missing_sources = set(gt_positives) - set(ranked)
@@ -282,6 +383,7 @@ def main(argv=None) -> None:
     mode = "CONSERVATIVE (unlabeled = unknown)" if not args.new_labels else "COMPLETE (with new labels)"
     print(f"Mode: {mode}")
     print_table(all_results, ks)
+    print_ci_table(all_results, ks)
 
     # Annotations note
     if not args.new_labels:
