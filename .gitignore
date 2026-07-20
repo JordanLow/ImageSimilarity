@@ -1,6 +1,10 @@
 # Local data, manifests, and private evaluation scripts — never commit
 _local/
 
+# NCR/ is the project's local-only source-of-truth folder (ground truth, shard membership,
+# per-ablation results) — deliberately not version-controlled, local reference only.
+NCR/
+
 # Python
 __pycache__/
 *.py[cod]

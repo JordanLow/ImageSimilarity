@@ -51,7 +51,6 @@ from negnet import (  # noqa: E402
 )
 
 POS, NEG = "Positive", "Negative"
-NODE_DIM = 3024
 
 
 # ── Data assembly ──────────────────────────────────────────────────────────────
@@ -69,15 +68,26 @@ def load_feature_lookup(paths: list[str]) -> dict[str, np.ndarray]:
     return lookup
 
 
+def infer_node_dim(feature_lookup: dict[str, np.ndarray]) -> int:
+    """Node feature width, taken from whatever cache was actually loaded rather
+    than a hardcoded constant -- backbones with no fusion head (e.g. raw DINOv3,
+    1024-d) produce a different width than the old 3-backbone pre-head concat
+    (3024-d). Fails loudly on a mixed-width cache instead of silently truncating."""
+    dims = {v.shape[0] for v in feature_lookup.values()}
+    if len(dims) != 1:
+        raise ValueError(f"Feature cache has inconsistent vector widths: {sorted(dims)}")
+    return dims.pop()
+
+
 class GraphData:
-    def __init__(self, graph_path: str, feature_lookup: dict[str, np.ndarray]):
+    def __init__(self, graph_path: str, feature_lookup: dict[str, np.ndarray], node_dim: int):
         rows = read_jsonl(Path(graph_path))
         node_rows = [r for r in rows if r.get("type") == "node"]
         edge_rows = [r for r in rows if r.get("type") == "edge"]
 
         self.node_ids = [r["node_id"] for r in node_rows]
         index = {nid: i for i, nid in enumerate(self.node_ids)}
-        self.node_x = np.zeros((len(self.node_ids), NODE_DIM), dtype=np.float32)
+        self.node_x = np.zeros((len(self.node_ids), node_dim), dtype=np.float32)
         misses = 0
         for i, r in enumerate(node_rows):
             stem = Path(r["path"]).stem if r.get("path") else r["node_id"]
@@ -202,7 +212,8 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     lookup = load_feature_lookup(args.features)
-    train_graph = GraphData(args.graph, lookup)
+    node_dim = infer_node_dim(lookup)
+    train_graph = GraphData(args.graph, lookup, node_dim)
 
     folds = json.loads(Path(args.folds).read_text(encoding="utf-8"))
     edge_fold = folds["edge_fold"]
@@ -225,9 +236,10 @@ def main() -> None:
     n_pos = train_graph.label_n[train_sel].sum()
     pos_weight = float((train_sel.sum() - n_pos) / max(n_pos, 1))
 
-    model = NEGNet(node_dim=NODE_DIM, hidden=args.hidden,
+    model = NEGNet(node_dim=node_dim, hidden=args.hidden,
                    mp_rounds=args.mp_rounds).to(device)
-    print(f"NEG-Net mp_rounds={args.mp_rounds}: {count_parameters(model):,} params; "
+    print(f"NEG-Net mp_rounds={args.mp_rounds}: node_dim={node_dim}, "
+          f"{count_parameters(model):,} params; "
           f"train edges {int(train_sel.sum())} (pos rate {train_pos_rate:.3f}), "
           f"val edges {int(val_sel.sum())}")
 
@@ -271,7 +283,9 @@ def main() -> None:
     if args.eval_graph:
         eval_lookup = (load_feature_lookup(args.eval_features)
                        if args.eval_features else lookup)
-        eval_graph = GraphData(args.eval_graph, eval_lookup)
+        # Reuses the TRAINING node_dim deliberately (not re-inferred from
+        # eval_lookup) -- the frozen model's input width is fixed at train time.
+        eval_graph = GraphData(args.eval_graph, eval_lookup, node_dim)
         eval_batch = eval_graph.tensors(standardizer, device)
         eval_pos_rate = args.eval_pos_rate
         if eval_pos_rate is None and eval_graph.mask_n.any():
