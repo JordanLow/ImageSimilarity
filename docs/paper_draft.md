@@ -139,8 +139,14 @@ B1 (keypoint floor only) … B2 (inlier only) … B4-equiv (full rule): Shard 1 
 ### 6.6 Discovery-bias audit ⚠TODO:Jordan(run)+Lin(adjudicate)
 Stratified relabeling of funnel-rejected candidates + pre-model hand-found pairs as a zero-shot audit of R → the funnel-coverage factor with a confidence interval. This section operationalizes §3's factorization; without it the formulation claim is words. Priority: high, small expert workload by design.
 
-### 6.7 Zero-shot transfer — the deciding experiment ⚠TODO:Jordan
-Frozen NEG-Net checkpoints AND frozen hand thresholds (0.65/2.13), both applied unchanged to the Sha Fei + Jinchaji Pictorial corpus. This is where "learned decision layer" vs "corpus-tuned thresholds" genuinely differentiates: the hand rule's constants were fitted to this archive's print characteristics; the transfer test asks which decision layer survives a corpus change. Both outcomes are reportable; a NEG-Net win rewrites §6.1's framing upward, a loss bounds the learned claim to coverage + calibration + label efficiency.
+### 6.7 Zero-shot transfer — the deciding experiment ⚠IN PROGRESS:Jordan(+Lin review)
+Frozen NEG-Net checkpoints AND frozen hand thresholds (0.65/2.13), both applied unchanged to the Sha Fei + Jinchaji Pictorial corpus (2,107 photographs, 1,803 reproductions). This is where "learned decision layer" vs "corpus-tuned thresholds" genuinely differentiates: the hand rule's constants were fitted to the NCR archive's print characteristics; the transfer test asks which decision layer survives a corpus change. Both outcomes are reportable; a NEG-Net win rewrites §6.1's framing upward, a loss bounds the learned claim to coverage + calibration + label efficiency.
+
+**Preliminary (descriptive only, no golden labels yet)** [jinchaji_negnet_vs_b4_report, 2026-07-24]: 978 evidenced candidate pairs from fresh top-10 retrieval; B4 accepts 69.5%; NEG-Net consistently more conservative (57.9–62.9% positive rate); agreement 81.0–84.6%, falling as relational sophistication rises; disagreements skew 3–4x toward B4-accept/NEG-Net-reject. Direction cannot be interpreted without labels; one disagreement pair has weak-tier independent support for NEG-Net.
+
+**Golden-label protocol (before any correctness claims)**: (i) blinded review — verdict and probability fields stripped from the review export, shuffled order; (ii) disagreement strata reviewed exhaustively, agreement strata randomly sampled with inverse-probability weighting for population P/R/F1 with CIs; (iii) only matches.csv's directly-certified tier (235 rows) trusted as prior labels, `absent_means_tp` rows treated as unlabeled; (iv) after labels land: join-labels → closure edges → candidate-vs-closure split + McNemar/Holm, same methodology as §6.1. Report the prior-shift rate used for the transfer run alongside results.
+
+**Funnel-coverage datapoint (feeds §6.6)**: 7 previously-known matches.csv pairs were never retrieved by top-10 at all — the pre-model zero-shot audit of R on an external corpus; report the certified-tier retrieval-recovery ratio as the first measured funnel-coverage estimate.
 
 ### 6.8 Label-efficiency curve ⚠TODO:Jordan
 Train on 25/50/75/100% of labeled families; F1 vs labels. Supports the "few hundred adjudications" claim.
