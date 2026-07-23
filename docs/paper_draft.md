@@ -2,7 +2,7 @@
 
 *Paper draft v0.1, 2026-07-23. Master content draft; LaTeX (AAAI-27 kit) to be produced from this file. Every number below is traceable to a compiled report (cited inline as [S1] = dinoraw_baseline_stage1_report, [S2] = stage2, [S3] = stage3, [NN] = negnet_tier0_report, all 2026-07-23 versions). Placeholders and open decisions are marked ⚠TODO with an owner.*
 
-**Authors**: [Jordan Low, Lin Du 杜琳, Deqian Kong 孔德乾 — order ⚠TODO:group]
+**Authors**: Lin Du 杜琳, Jordan Low, Deqian Kong 孔德乾, Prabhu [全名/单位 ⚠TODO:Lin]
 
 ---
 
