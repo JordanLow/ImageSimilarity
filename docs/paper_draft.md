@@ -47,7 +47,9 @@ Prose version of the formulation note (NCR-Match: Problem Formulation and Code C
 - Corpus V = archival photographs ⊔ printed reproductions. Latent maps: every image reproduces exactly one **exposure**; every exposure belongs to one **scene**. This induces two nested equivalence relations (same-exposure N ⊆ same-scene S); transitivity and nesting are not modeling assumptions but the definition of the hypothesis space.
 - **Observation model**: a fixed, given candidate-generation operator R (retrieval top-K + correspondence floor) produces candidate set E; each candidate pair carries a frozen geometric evidence vector g_ij (match counts, inlier ratio, reprojection statistics, overlap, homography, pose components, global similarity). R's quality enters the estimands, not the model.
 - **Supervision**: expert adjudication on candidate pairs only; therefore every supervised quantity is conditional on E. **Discovery bias is definitional**: recall_e2e = P(pair ∈ E | true match) × P(accepted | ∈ E, true match). The first factor (funnel coverage) is estimated by stratified relabeling of rejected candidates and a pre-model zero-shot audit; the second (decision recall) against adjudication.
-- **Decision layer** (separate from estimation): three-way accept / review / reject with a bounded false-rejection rate ⚠TODO:conformal implementation (owner: Jordan, with Deqian spec).
+- **Three estimands, strictly ordered** (note §4; this ladder organizes §6): Q1 = pairwise relation on candidate pairs (directly supervised → §6.1–6.2); Q2 = the partition restricted to nodes the funnel touches (partially identified; grows with graph density → §6.2b); Q3 = matches over all archive×reproduction pairs (end-to-end; requires the funnel-coverage factor → §6.6).
+- **Scene granularity** (note Remark 1, pre-empting the "scenes drift over long chains" objection): the scene relation is defined at annotation-protocol granularity (same physical setting, same session); transitivity is invoked only at the diameter of observed clusters, and the adjudication codebook fixes the granularity operationally.
+- **Decision layer** (separate from estimation): three-way accept / review / reject chosen to minimize expert review volume subject to a one-sided bound on rejected true matches (FNR ≤ α) ⚠TODO:conformal implementation (owner: Jordan, with Deqian spec).
 
 ⚠TODO:Deqian — one-paragraph formal statement (equations for N ≤ S, the factorization, and the loss) lifted from the note; keep §3 under one page.
 
@@ -60,6 +62,8 @@ Prose version of the formulation note (NCR-Match: Problem Formulation and Code C
 
 ### 4.2 Candidate generation and evidence
 Retrieval: frozen off-the-shelf DINOv3 backbone, top-10 per source over the full corpus (427,730 candidate rows) [S1]. Correspondence floor: ASpanFormer keypoint matching, ≥50 filtered keypoints. Surviving pairs receive the full evidence vector (geometry + VGGT pose signals). Per-shard funnel (example, Shard 2): 71,190 candidates → 725 evidenced pairs [NN §3].
+
+Two structural properties worth stating as dataset features: (i) reproductions also serve as queries by design, so retrieved reproduction-to-reproduction pairs carry full geometric evidence — same-side relations are partly observed directly, not only through the partition coupling; (ii) positive adjudications propagate for free through transitive closure, so the labeled positives force additional same-side coordinates without any extra expert review (pre-swap pooled count: 577 positives forced 195 closure coordinates; recompute on the frozen post-swap graphs ⚠TODO:Jordan).
 
 ### 4.3 Labels and the taxonomy ⚠OPEN DECISION (group; raised by Jordan 07-23)
 - **What exists now**: binary expert adjudication (same exposure vs not) on 1,281+ candidate pairs (Shard 1: 643; Shard 2: 638+; counts to be finalized after ground-truth join freeze), plus transitively-implied positive (closure) pairs.
@@ -119,6 +123,9 @@ Significance [NN §4]: full-479 B4-vs-NEG-Net differences do **not** survive Hol
 
 ### 6.2 In-distribution training and cross-shard generalization [NN §2–3]
 Shard-1 fold: mp0 0.953 / mp3 0.958 / mp3_noloss 0.963 F1; cross-shard drop of 2–3 F1 points with recall near-ceiling (0.974–0.977); precision is where message passing pays (fewer false positives on unfamiliar data).
+
+### 6.2b Partition-level (Q2) evaluation ⚠TODO:Jordan (design pre-registered in the note, Remark 2)
+Closure-prediction experiment on Shard 1 alone: hold out the closure-implied coordinates, train on labeled candidate edges only, and measure whether the model recovers the held-out implications; plus pairwise P/R against exposure families. This upgrades §6.1's 30/30 closure observation from a by-product into a pre-registered Q2 result, and is the natural home for the "coverage, not pointwise accuracy" claim.
 
 ### 6.3 Funnel-plane ablations — Stage 1 (retrieval) [S1]
 Table A (Shard 1, 292 queries, bootstrap CIs): DINO-production row circular by construction (its retrieval seeded the ground truth); challengers: DINOv3-raw R@1 98.3 / mAP 98.3, SSCD 96.2 / 94.9, CLIP 84.6 / 86.4; ranking statistically separated at R@1/mAP. Coverage: DINOv3-raw misses 2/325 known positives; union of three challengers covers 325/325. Implied full-pipeline recall if swapped in: DINOv3-raw 96.0% vs production 96.3%. ⚠TODO:Jordan — add Shard-2 columns where available [S1 has partial Shard-2 extension].
