@@ -71,7 +71,9 @@ Two structural properties worth stating as dataset features: (i) reproductions a
 - **Two resolutions, pick one before the dataset-release claim is final**:
   - (a) PI completes the negative audit on the labeled pairs (~600 non-matches to re-bin) → abstract's ternary sentence stands. Owner: Lin Du; feasibility window ⚠TODO.
   - (b) Audit not complete by full-paper deadline → dataset sentence becomes "labeled same exposure or not, with scene-level structure defined for future annotation"; θ_S head reported as formulation structure only. Abstract edited accordingly.
-  - **Update 07-24 (strengthens option a)**: the Jinchaji golden review independently flagged 75 same-scene-different-exposure pairs among its 180 negatives — the dataset's first real S\N labels, produced by exactly the adjudication process the taxonomy prescribes. The ternary claim is now grounded on the transfer corpus regardless; the NCR-side audit extends it.
+  - **Update 07-24 (strengthens option a)**: the Jinchaji golden review independently flagged 75 same-scene-different-exposure pairs among its 180 negatives — the dataset's first real S\N labels, produced blind by exactly the adjudication process the taxonomy prescribes. The ternary claim is now grounded on the transfer corpus regardless; the NCR-side audit extends it.
+  - **Adopted plan (07-24) for the NCR side**: high-similarity-stratum audit instead of a full one. Jordan exports Shard-1/2 negatives sorted by inlier ratio / global similarity descending, verdicts stripped and shuffled; Lin blind-reviews the top ~150 (same protocol as Jinchaji). S\N negatives are by construction the high-similarity ones, so this stratum captures most of the class at a quarter of the cost; the release documents the stratification, and the full audit continues post-submission (labels join last — it lands as a data update).
+  - **Presentation (resolves the asymmetry concern)**: not "a θ_S result" but **stratified error analysis on the hardest negative class** — one table, both corpora: per decision layer (B4 / mp0 / mp3), false-positive rate on S\N negatives vs unrelated negatives. Quantifies exactly where false positives concentrate and lets the taxonomy earn its place; θ_S's own S\N-vs-U separation goes in as one exploratory, clearly-caveated sentence or is dropped.
 - Either way, **the paper claims no automatic scene classifier**; scene is a label class and a structural prior (nesting penalty), not a deployed output.
 
 ### 4.4 Splits, families, and leakage control
@@ -181,7 +183,7 @@ Colonial/occupation-era archive and magazine handled as historical sources; data
 
 | # | Item | Owner | Blocks |
 |---|---|---|---|
-| 1 | Scene-class resolution: audit (a) vs re-scope (b) in §4.3 | Lin + group call | Abstract wording, §4, §7 |
+| 1 | NCR-side S\N labels: Jordan exports similarity-sorted verdict-stripped negatives; Lin blind-reviews top ~150; stratified hard-negative FP table (§4.3 adopted plan) | Jordan (export) + Lin (review) | §4, §6 stratified table |
 | 2 | JOCCH zero-shot: NEG-Net vs frozen thresholds | Jordan | §6.7, abstract [XX] |
 | 3 | Conformal layer + risk–coverage | Jordan (Deqian spec) | §5.4, §6.9, abstract [α] |
 | 4 | Discovery-bias audit (stratified rejects + pre-model pairs) | Jordan run, Lin adjudicate | §6.6 |
