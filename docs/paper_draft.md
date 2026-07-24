@@ -156,7 +156,7 @@ McNemar/Holm: B4 > mp0 (p=0.021), B4 > mp3_noloss (p=0.0005); **B4 vs full mp3 n
 
 **Interpretation adopted for §6.1's framing**: the matched-evidence result replicates across corpora (B4 remains the stronger pointwise judge — not a Shard-2 artifact), while the gap to full NEG-Net narrows to non-significance on the hardest OOD test; the structural coverage advantage replicates (104/104). H2 is elevated to a headline finding of the paper. Neither layer transfers unscathed — the shared recall drop feeds the funnel-vs-decision discussion.
 
-⚠TODO:group — adjudication provenance for §4/§8: who performed the 751-pair review, and was it blinded to both systems' verdicts? If unblinded, add an independent spot-verification sample (owner: Lin, ~100 pairs) and disclose the protocol as executed.
+**Adjudication provenance (RESOLVED 07-24)**: the 751-pair golden review was performed by Lin Du (historian co-author) with all system verdicts and probabilities withheld — expert adjudication, blind to system outputs. §4's protocol paragraph states this verbatim. Remaining nicety (P2, owner: Jordan): a ~100-pair random sample, verdict-stripped and shuffled, blind-reviewed by a second annotator for an inter-rater agreement (kappa) figure — standard dataset-quality metric, not a remediation.
 
 **Funnel-coverage datapoint (feeds §6.6)**: 7 previously-known matches.csv pairs were never retrieved by top-10 at all — the pre-model zero-shot audit of R on an external corpus; report the certified-tier retrieval-recovery ratio as the first measured funnel-coverage estimate.
 
