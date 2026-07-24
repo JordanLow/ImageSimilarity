@@ -30,7 +30,7 @@ Para 4 — contributions (each maps to a section):
 1. **Formulation** (§3): nested partition estimation with a fixed candidate-generation operator; end-to-end recall factorizes into funnel coverage × decision recall.
 2. **NCR-Match dataset** (§4): 42,773 archival photographs × 2,856 reproductions, 1,200+ expert-adjudicated candidate pairs with family structure and leakage-controlled splits; released on Hugging Face.
 3. **NEG-Net** (§5): a relational decision layer trained on a few hundred adjudications; message passing improves over pairwise scoring (Holm-corrected p = 0.0089) and extends judgment to transitively-implied pairs that pointwise rules structurally cannot evaluate (30/30 vs 0/30 on Shard 2).
-4. **Honest accounting** (§6): on matched evidence the corpus-tuned hand rule remains the stronger pointwise judge (Holm-robust); we report this openly and locate the learned layer's value in coverage, label efficiency, calibration, and transfer ⚠(transfer result pending — JOCCH run decides the strength of this claim; owner: Jordan).
+4. **Honest accounting** (§6): on matched evidence the corpus-tuned hand rule remains the stronger pointwise judge on both the held-out shard and the unseen corpus (Holm-robust vs two of three configs; n.s. vs full NEG-Net on the unseen corpus) — reported openly; the learned layer's confirmed value is structural coverage (30/30 and 104/104 closure pairs vs 0 for any pointwise rule), Holm-confirmed message passing gains on both corpora, and a consistency-loss benefit that **grows with distribution shift** (n.s. in-family, p<0.0001 on the unseen corpus) — a pre-stated, mechanistically motivated finding we elevate to headline status.
 
 ## 2. Related Work ⚠TODO:Jordan+Deqian
 
@@ -71,6 +71,7 @@ Two structural properties worth stating as dataset features: (i) reproductions a
 - **Two resolutions, pick one before the dataset-release claim is final**:
   - (a) PI completes the negative audit on the labeled pairs (~600 non-matches to re-bin) → abstract's ternary sentence stands. Owner: Lin Du; feasibility window ⚠TODO.
   - (b) Audit not complete by full-paper deadline → dataset sentence becomes "labeled same exposure or not, with scene-level structure defined for future annotation"; θ_S head reported as formulation structure only. Abstract edited accordingly.
+  - **Update 07-24 (strengthens option a)**: the Jinchaji golden review independently flagged 75 same-scene-different-exposure pairs among its 180 negatives — the dataset's first real S\N labels, produced by exactly the adjudication process the taxonomy prescribes. The ternary claim is now grounded on the transfer corpus regardless; the NCR-side audit extends it.
 - Either way, **the paper claims no automatic scene classifier**; scene is a label class and a structural prior (nesting penalty), not a deployed output.
 
 ### 4.4 Splits, families, and leakage control
@@ -142,9 +143,20 @@ Stratified relabeling of funnel-rejected candidates + pre-model hand-found pairs
 ### 6.7 Zero-shot transfer — the deciding experiment ⚠IN PROGRESS:Jordan(+Lin review)
 Frozen NEG-Net checkpoints AND frozen hand thresholds (0.65/2.13), both applied unchanged to the Sha Fei + Jinchaji Pictorial corpus (2,107 photographs, 1,803 reproductions). This is where "learned decision layer" vs "corpus-tuned thresholds" genuinely differentiates: the hand rule's constants were fitted to the NCR archive's print characteristics; the transfer test asks which decision layer survives a corpus change. Both outcomes are reportable; a NEG-Net win rewrites §6.1's framing upward, a loss bounds the learned claim to coverage + calibration + label efficiency.
 
-**Preliminary (descriptive only, no golden labels yet)** [jinchaji_negnet_vs_b4_report, 2026-07-24]: 978 evidenced candidate pairs from fresh top-10 retrieval; B4 accepts 69.5%; NEG-Net consistently more conservative (57.9–62.9% positive rate); agreement 81.0–84.6%, falling as relational sophistication rises; disagreements skew 3–4x toward B4-accept/NEG-Net-reject. Direction cannot be interpreted without labels; one disagreement pair has weak-tier independent support for NEG-Net.
+**COMPLETED with golden labels** [negnet_tier0_report §9, 2026-07-24]: 951 evidenced candidate pairs; golden labels 771 positive / 180 negative (75 of the negatives expert-flagged as same-scene-different-exposure — the dataset's first real S\N labels). Candidate-only results (closure tracked separately: all NEG-Net configs 104/104, B4 structurally 0/104):
 
-**Golden-label protocol (before any correctness claims)**: (i) blinded review — verdict and probability fields stripped from the review export, shuffled order; (ii) disagreement strata reviewed exhaustively, agreement strata randomly sampled with inverse-probability weighting for population P/R/F1 with CIs; (iii) only matches.csv's directly-certified tier (235 rows) trusted as prior labels, `absent_means_tp` rows treated as unlabeled; (iv) after labels land: join-labels → closure edges → candidate-vs-closure split + McNemar/Holm, same methodology as §6.1. Report the prior-shift rate used for the transfer run alongside results.
+| Model | P | R | F1 |
+|---|---|---|---|
+| Hand rule B4 | 0.975 | 0.826 | **0.895** |
+| pair-MLP (mp0) | 0.967 | 0.791 | 0.870 |
+| NEG-Net (mp3) | 0.978 | 0.805 | 0.883 |
+| mp3, no consistency losses | 0.978 | 0.759 | 0.855 |
+
+McNemar/Holm: B4 > mp0 (p=0.021), B4 > mp3_noloss (p=0.0005); **B4 vs full mp3 n.s. (p=0.27)**. Attribution ladder: H1 message passing confirmed again (p=0.030); **H2 consistency losses decisively confirmed (b=42, c=7, p<0.0001)** — the regularizer's benefit grows with distribution shift, exactly as pre-stated on Shard 2 where it was directional-only (p=0.34). All systems drop recall sharply vs Shard 2 (B4 0.983→0.826; mp3 0.975→0.805) — scan-quality hypothesis ⚠TODO:Jordan (FN-vs-image-quality breakdown, one figure).
+
+**Interpretation adopted for §6.1's framing**: the matched-evidence result replicates across corpora (B4 remains the stronger pointwise judge — not a Shard-2 artifact), while the gap to full NEG-Net narrows to non-significance on the hardest OOD test; the structural coverage advantage replicates (104/104). H2 is elevated to a headline finding of the paper. Neither layer transfers unscathed — the shared recall drop feeds the funnel-vs-decision discussion.
+
+⚠TODO:group — adjudication provenance for §4/§8: who performed the 751-pair review, and was it blinded to both systems' verdicts? If unblinded, add an independent spot-verification sample (owner: Lin, ~100 pairs) and disclose the protocol as executed.
 
 **Funnel-coverage datapoint (feeds §6.6)**: 7 previously-known matches.csv pairs were never retrieved by top-10 at all — the pre-model zero-shot audit of R on an external corpus; report the certified-tier retrieval-recovery ratio as the first measured funnel-coverage estimate.
 
